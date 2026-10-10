@@ -130,8 +130,8 @@ function Hero({ profile }: { profile: Profile | null }) {
 
 function Credential({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex flex-col gap-1 rounded-lg border bg-card p-5">
-      <p className="font-display text-2xl font-semibold text-primary md:text-3xl">{value}</p>
+    <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card p-5">
+      <p className="font-display text-2xl font-semibold break-words text-primary md:text-3xl">{value}</p>
       <p className="text-sm text-muted-foreground">{label}</p>
     </div>
   )
@@ -142,7 +142,7 @@ function About({ profile }: { profile: Profile }) {
   const credentials = [
     profile.years_experience != null && { value: `${profile.years_experience} years`, label: 'in Mumbai real estate' },
     profile.deals_closed != null && { value: `${profile.deals_closed}+ deals`, label: 'closed for families' },
-    profile.license_no && { value: `RERA ${profile.license_no}`, label: 'MahaRERA registered' },
+    profile.license_no && { value: profile.license_no, label: 'MahaRERA registered' },
   ].filter((c): c is { value: string; label: string } => !!c)
 
   return (
