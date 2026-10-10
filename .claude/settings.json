@@ -1,0 +1,32 @@
+{
+    "permissions": {
+        "allow": [
+            "Bash(make dev:*)",
+            "Bash(make down:*)",
+            "Bash(make logs:*)",
+            "Bash(make migrate:*)",
+            "Bash(make migrate-diff:*)",
+            "Bash(make migrate-status:*)",
+            "Bash(make sqlc:*)",
+            "Bash(make seed:*)",
+            "Bash(make test:*)",
+            "Bash(make lint:*)",
+            "Bash(make psql:*)",
+            "Bash(make shadcn:*)",
+            "Bash(docker compose ps:*)",
+            "Bash(docker compose logs:*)",
+            "Bash(git status:*)",
+            "Bash(git diff:*)",
+            "Bash(git log:*)",
+            "Bash(ls:*)",
+            "Bash(tree:*)",
+            "Read(//home/aidev/projects/brickbot/**)"
+        ],
+        "deny": [
+            "Bash(sudo:*)",
+            "Bash(rm -rf /*)",
+            "Bash(git push --force:*)",
+            "Read(.env)"
+        ]
+    }
+}
