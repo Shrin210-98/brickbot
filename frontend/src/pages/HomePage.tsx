@@ -1,8 +1,9 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { ArrowRight, Compass, KeyRound, ListChecks, MapPin, MessageCircle } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useFeaturedListings } from '@/api/listings'
 import { useProfile } from '@/api/profile'
+import { images } from '@/assets/images'
 import { InquiryForm } from '@/components/inquiry/InquiryForm'
 import { siteName } from '@/components/layout/nav'
 import { EmptyState } from '@/components/listings/EmptyState'
@@ -39,10 +40,22 @@ function Eyebrow({ children }: { children: ReactNode }) {
   return <p className="text-sm font-medium tracking-wider text-primary uppercase">{children}</p>
 }
 
+// Tries the profile photo, then the placeholder portrait, then falls back to
+// initials once every image has failed to load.
 function Portrait({ profile }: { profile: Profile }) {
   const frame = 'aspect-[4/5] w-full max-w-[400px] rounded-2xl'
-  if (profile.photo_url) {
-    return <img src={profile.photo_url} alt={profile.full_name} className={cn(frame, 'object-cover shadow-sm')} />
+  const sources = [profile.photo_url, images.people.agent].filter((s): s is string => !!s)
+  const [failed, setFailed] = useState(0)
+  const src = sources[failed]
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={profile.full_name}
+        onError={() => setFailed((n) => n + 1)}
+        className={cn(frame, 'object-cover shadow-sm')}
+      />
+    )
   }
   return (
     <div
@@ -54,11 +67,28 @@ function Portrait({ profile }: { profile: Profile }) {
   )
 }
 
+function heroSubhead(profile: Profile | null): string {
+  const areas = profile?.service_areas.slice(0, 3) ?? []
+  if (areas.length > 0) return `Helping families buy and sell in ${areas.join(', ')}.`
+  return 'Homes, plots and commercial spaces for sale and rent.'
+}
+
 function Hero({ profile }: { profile: Profile | null }) {
   const whatsapp = profile ? whatsappLink(profile.whatsapp_number) : null
   return (
-    <Section id="hero" className="pt-12 md:pt-20">
-      <div className="grid items-center gap-12 md:grid-cols-[1fr_auto] md:gap-16">
+    // The image and overlay are absolute against the section, so they bleed
+    // to its edges while the content keeps Section's max-w-6xl wrapper.
+    <Section id="hero" className="relative isolate overflow-hidden pt-12 md:pt-20">
+      <img
+        src={images.hero.home}
+        alt=""
+        aria-hidden
+        loading="eager"
+        fetchPriority="high"
+        className="absolute inset-0 size-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/70 to-background" />
+      <div className="relative grid items-center gap-12 md:grid-cols-[1fr_auto] md:gap-16">
         <div className="flex flex-col gap-5">
           {profile?.tagline && <Eyebrow>{profile.tagline}</Eyebrow>}
           <h1 className="text-[2.5rem]/[1.1] sm:text-5xl/[1.1] md:text-[3.5rem]/[1.1]">
@@ -68,7 +98,7 @@ function Hero({ profile }: { profile: Profile | null }) {
             <p className="font-display text-xl/[1.3] text-muted-foreground md:text-[1.75rem]/[1.3]">{profile.headline}</p>
           )}
           <p className="line-clamp-2 max-w-xl text-muted-foreground">
-            {profile?.bio || 'Homes, plots and commercial spaces for sale and rent.'}
+            {heroSubhead(profile)}
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
             <Button className="h-11 px-6 text-base" nativeButton={false} render={<Link to="/listings" />}>
@@ -88,7 +118,7 @@ function Hero({ profile }: { profile: Profile | null }) {
         </div>
         {profile && (
           <div className="flex justify-center md:justify-end">
-            <Portrait profile={profile} />
+            <Portrait key={profile.photo_url} profile={profile} />
           </div>
         )}
       </div>
@@ -247,7 +277,13 @@ export function HomePage() {
       )}
       <FeaturedListings />
       {/* 8c: testimonials */}
-      <section id="testimonials" className="bg-secondary" />
+      <Section id="testimonials" className="bg-secondary">
+        <div className="flex flex-col gap-3">
+          <Eyebrow>Testimonials</Eyebrow>
+          <h2 className="text-3xl/[1.2]">What clients say</h2>
+          <p className="text-muted-foreground">Client stories will appear here.</p>
+        </div>
+      </Section>
       {/* 8c: redesigned contact section */}
       <Section id="contact">
         <div className="mx-auto flex max-w-xl flex-col gap-6">
