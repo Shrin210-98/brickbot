@@ -119,6 +119,27 @@ func TestEchoTurns(t *testing.T) {
 			msgs:     []anthropic.MessageParam{anthropic.NewUserMessage(anthropic.NewTextBlock("hi")), anthropic.NewAssistantMessage(anthropic.NewTextBlock("Hi!")), anthropic.NewUserMessage(anthropic.NewTextBlock("yes"))},
 			wantText: "In demo mode",
 		},
+		{
+			name: "a new question after an interrupted tool answers the question",
+			msgs: append(afterSearch("unused")[:3],
+				anthropic.NewUserMessage(anthropic.NewTextBlock("show me flats in Khar"))),
+			wantTool:  toolSearch,
+			wantInput: map[string]any{"property_type": "apartment", "query": "Khar"},
+		},
+		{
+			// What the history window actually sends: the orphaned result merged into the next visitor turn.
+			name: "a merged orphaned tool result still answers the question",
+			msgs: append(afterSearch("unused")[:2], anthropic.NewUserMessage(
+				anthropic.NewToolResultBlock("toolu_1", searchResult, false),
+				anthropic.NewTextBlock("show me flats in Khar"))),
+			wantTool:  toolSearch,
+			wantInput: map[string]any{"property_type": "apartment", "query": "Khar"},
+		},
+		{
+			name:     "no visitor text anywhere is a demo reply",
+			msgs:     []anthropic.MessageParam{anthropic.NewUserMessage(anthropic.NewToolResultBlock("toolu_1", searchResult, false))},
+			wantText: "In demo mode",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

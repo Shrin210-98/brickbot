@@ -324,10 +324,17 @@ var (
 func echoDecide(msgs []echoMessage, first bool) echoReply {
 	n := len(msgs)
 	last := msgs[n-1]
-	if last.has("tool_result") {
-		return echoAfterTools(msgs)
-	}
 	raw := last.text()
+	// The visitor's newest words win. A turn interrupted mid-tool (Stop) leaves
+	// an orphaned tool_result, which the history window merges into the next
+	// visitor message as [tool_result…, text]. Only a turn of tool results
+	// alone is the tool loop asking for a summary.
+	if strings.TrimSpace(raw) == "" {
+		if last.has("tool_result") && echoHasVisitorText(msgs) {
+			return echoAfterTools(msgs)
+		}
+		return echoReply{text: echoFallback}
+	}
 	text := strings.ToLower(raw)
 	facts := echoFactsOf(msgs)
 
@@ -347,7 +354,20 @@ func echoDecide(msgs []echoMessage, first bool) echoReply {
 	if first || reGreeting.MatchString(text) {
 		return echoReply{text: `Hi! I can search the listings for you. Try "show me 2 BHK flats for rent in Bandra under 60k".`}
 	}
-	return echoReply{text: `In demo mode I can search listings, show details and pass your details on. Try "show me flats in Bandra", "tell me more about the first one", or "yes, share my details".`}
+	return echoReply{text: echoFallback}
+}
+
+// echoFallback is the scripted reply when nothing more specific applies.
+const echoFallback = `In demo mode I can search listings, show details and pass your details on. Try "show me flats in Bandra", "tell me more about the first one", or "yes, share my details".`
+
+// echoHasVisitorText reports whether any user turn in the window holds text.
+func echoHasVisitorText(msgs []echoMessage) bool {
+	for _, m := range msgs {
+		if m.Role == roleUser && strings.TrimSpace(m.text()) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // echoPickSlug returns a slug named in text, else the listing an ordinal
