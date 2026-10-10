@@ -34,6 +34,7 @@
     --color-secondary: var(--secondary);
     --color-primary-foreground: var(--primary-foreground);
     --color-primary: var(--primary);
+    --color-primary-strong: var(--primary-strong);
     --color-popover-foreground: var(--popover-foreground);
     --color-popover: var(--popover);
     --color-card-foreground: var(--card-foreground);
@@ -63,8 +64,10 @@
     --secondary-foreground: hsl(0 0% 10%);
     --muted: hsl(36 20% 86%);
     --muted-foreground: hsl(0 0% 42%);
-    --accent: hsl(14 50% 36%);
-    --accent-foreground: hsl(0 0% 100%);
+    /* shadcn uses accent for menu/select item hover and open states: keep it neutral. */
+    --accent: hsl(36 30% 91%);
+    --accent-foreground: hsl(0 0% 10%);
+    --primary-strong: hsl(14 50% 36%);
     --destructive: hsl(0 72% 45%);
     --border: hsl(36 25% 85%);
     --input: hsl(36 25% 85%);
@@ -79,8 +82,8 @@
     --sidebar-foreground: hsl(0 0% 10%);
     --sidebar-primary: hsl(14 54% 54%);
     --sidebar-primary-foreground: hsl(0 0% 100%);
-    --sidebar-accent: hsl(14 50% 36%);
-    --sidebar-accent-foreground: hsl(0 0% 100%);
+    --sidebar-accent: hsl(36 30% 91%);
+    --sidebar-accent-foreground: hsl(0 0% 10%);
     --sidebar-border: hsl(36 25% 85%);
     --sidebar-ring: hsl(14 54% 54%);
 }
@@ -93,7 +96,7 @@
     @apply bg-background text-foreground;
     }
   html {
-    @apply font-body;
+    @apply font-body scroll-smooth scroll-pt-16;
     }
   body {
     @apply text-base/[1.6];
