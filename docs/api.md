@@ -43,6 +43,7 @@ Base path: `/api`. JSON in and out, `snake_case` field names. Updated whenever a
 | GET | `/api/listings/featured` | — | Up to 6 featured listings |
 | GET | `/api/listings/facets` | — | Filter options with counts |
 | GET | `/api/listings/{slug}` | — | One listing with media |
+| GET | `/api/testimonials` | — | Published client testimonials |
 | POST | `/api/inquiries` | — (rate-limited) | Visitor inquiry |
 | GET | `/media/{path...}` | — | Uploaded files |
 
@@ -128,6 +129,19 @@ Counts over active listings, for building filter UIs. Every array may be empty.
 }
 ```
 `404 not_found` if no active listing has that slug.
+
+### `GET /api/testimonials`
+`200`: published testimonials ordered by `position`, then `created_at`. No pagination.
+```json
+{
+  "items": [{
+    "id": "3b1e…", "author_name": "Priya & Arjun Mehta", "author_title": "First-time buyers, Bandra West",
+    "author_photo_url": null, "quote": "Ravi found us a 2 BHK in our budget in three weeks.",
+    "rating": 5, "listing_slug": "2bhk-bandra-west", "created_at": "2026-10-10T08:00:00Z"
+  }]
+}
+```
+`author_title`, `author_photo_url`, `rating` (1–5) and `listing_slug` may be `null`. `listing_slug` is set only while the linked listing is active and not deleted. `items` is `[]` when nothing is published.
 
 ### `POST /api/inquiries`
 ```json
@@ -300,5 +314,6 @@ Schema: `backend/db/schema.sql`. Queries: `backend/db/queries/` → `backend/int
 | `listings` (soft delete via `deleted_at`; every query filters it) | Public (`status = 'active'` only): `ListActiveListings`, `CountActiveListings`, `ListFeaturedListings`, `GetActiveListingBySlug`, `FacetPurposes`, `FacetPropertyTypes`, `FacetCities`, `FacetLocalities`, `FacetBedrooms`. Admin: `ListListings`, `CountListings`, `GetListing`, `ListingSlugExists`, `CreateListing`, `UpdateListing`, `DeleteListing` (soft). Seed: `UpsertListingBySlug` |
 | `listing_media` | `ListListingMedia`, `ListMediaForListings` (batch), `GetListingMedia`, `NextListingMediaPosition`, `CreateListingMedia`, `UpdateListingMediaPath`, `UpdateListingMediaPosition`, `ReorderListingMedia`, `DeleteListingMedia` |
 | `inquiries` (`chat_session_id` set for `source = 'chat'`, unique when set) | `CreateInquiry`, `ListInquiries`, `CountInquiries`, `GetInquiry`, `UpdateInquiry` |
+| `testimonials` (public only when `is_published`) | `ListPublishedTestimonials`, `GetTestimonialByID` |
 | `chat_sessions` | `CreateChatSession`, `GetChatSession` (by id and `visitor_id`) |
 | `chat_messages` (append-only; `content` is the raw Anthropic content-block array) | `CreateChatMessage`, `ListRecentChatMessages`, `ListChatMessages` |
