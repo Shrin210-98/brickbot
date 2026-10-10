@@ -39,6 +39,7 @@ services:
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     env_file: .env
     environment:
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     volumes:
       - ./backend:/app
