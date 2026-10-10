@@ -28,15 +28,15 @@ function ContactCard({ listing }: { listing: ListingDetail }) {
   const { data: profile } = useProfile()
   if (!profile) return null
 
-  const message = `Hi ${profile.name}, I'm interested in "${listing.title}" (${window.location.origin}/listings/${listing.slug}).`
+  const message = `Hi ${profile.full_name}, I'm interested in "${listing.title}" (${window.location.origin}/listings/${listing.slug}).`
   const whatsapp = whatsappLink(profile.whatsapp_number, message)
-  if (!whatsapp && !profile.contact.phone) return null
+  if (!whatsapp && !profile.phone) return null
 
   return (
     <Card>
       <CardContent className="flex flex-col gap-3">
         <p className="font-medium">Interested in this property?</p>
-        <p className="text-sm text-muted-foreground">Contact {profile.name} directly.</p>
+        <p className="text-sm text-muted-foreground">Contact {profile.full_name} directly.</p>
         {whatsapp && (
           <Button
             className="w-full bg-[#25D366] text-white hover:bg-[#1ebe5b]"
@@ -46,9 +46,9 @@ function ContactCard({ listing }: { listing: ListingDetail }) {
             <MessageCircle data-icon="inline-start" /> Chat on WhatsApp
           </Button>
         )}
-        {profile.contact.phone && (
-          <Button variant="outline" className="w-full" nativeButton={false} render={<a href={`tel:${profile.contact.phone}`} />}>
-            <Phone data-icon="inline-start" /> {profile.contact.phone}
+        {profile.phone && (
+          <Button variant="outline" className="w-full" nativeButton={false} render={<a href={`tel:${profile.phone}`} />}>
+            <Phone data-icon="inline-start" /> {profile.phone}
           </Button>
         )}
       </CardContent>

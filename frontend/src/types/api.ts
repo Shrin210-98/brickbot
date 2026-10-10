@@ -22,16 +22,33 @@ export interface Paginated<T> {
   page_size: number
 }
 
+export interface ProcessStep {
+  title: string
+  description: string
+}
+
 export interface Profile {
-  name: string
+  id: number
+  full_name: string
+  agency_name: string // never empty: the API falls back to "BrickBot"
+  tagline: string | null
+  headline: string | null
   bio: string
   photo_url: string | null
+  phone: string
   whatsapp_number: string
+  email: string
   service_areas: string[]
-  contact: { phone: string; email: string }
+  license_no: string | null
+  socials: Record<string, string>
+  years_experience: number | null
+  deals_closed: number | null
+  specialties: string[]
+  process_steps: ProcessStep[]
   country_code: string
   currency: string
   area_unit: AreaUnit
+  chat_enabled: boolean
 }
 
 export interface ListingSummary {
