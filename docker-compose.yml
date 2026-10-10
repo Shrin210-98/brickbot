@@ -38,6 +38,8 @@ services:
         HOST_GID: ${HOST_GID:-1000}
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     env_file: .env
+    environment:
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     volumes:
       - ./backend:/app
       - gomod:/go/pkg/mod
