@@ -18,6 +18,7 @@ type Handlers struct {
 	Inquiries     *handlers.InquiriesHandler
 	AdminListings *handlers.AdminListingsHandler
 	Media         *handlers.MediaHandler
+	Chat          *handlers.ChatHandler
 }
 
 // Security configures the middleware that guards routes.
@@ -32,6 +33,7 @@ type Security struct {
 var (
 	inquiryRate = rate{n: 5, every: time.Minute, burst: 5}
 	loginRate   = rate{n: 5, every: 15 * time.Minute, burst: 5}
+	chatRate    = rate{n: 10, every: time.Minute, burst: 5}
 )
 
 type rate struct {
@@ -50,6 +52,7 @@ func Routes(h Handlers, sec Security) http.Handler {
 	requireAdmin := middleware.RequireAdmin(sec.Sessions, sec.Checker)
 	inquiryLimit := inquiryRate.limit(sec.TrustProxy)
 	loginLimit := loginRate.limit(sec.TrustProxy)
+	chatLimit := chatRate.limit(sec.TrustProxy)
 
 	mux := http.NewServeMux()
 
@@ -62,6 +65,11 @@ func Routes(h Handlers, sec Security) http.Handler {
 	mux.HandleFunc("GET /api/listings/{slug}", h.Listings.Get)
 	mux.Handle("POST /api/inquiries", inquiryLimit(http.HandlerFunc(h.Inquiries.Create)))
 	mux.HandleFunc("GET /media/{path...}", h.Media.Serve)
+
+	// chatbot (503 while disabled); see docs/chatbot.md
+	mux.HandleFunc("POST /api/chat/sessions", h.Chat.CreateSession)
+	mux.HandleFunc("GET /api/chat/sessions/{id}/messages", h.Chat.Messages)
+	mux.Handle("POST /api/chat/sessions/{id}/messages", chatLimit(http.HandlerFunc(h.Chat.Send)))
 
 	// auth
 	mux.Handle("POST /api/auth/login", loginLimit(http.HandlerFunc(h.Auth.Login)))

@@ -11,6 +11,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"brickbot/internal/auth"
@@ -19,6 +21,7 @@ import (
 	"brickbot/internal/handlers"
 	"brickbot/internal/server"
 	"brickbot/internal/services"
+	"brickbot/internal/services/chat"
 )
 
 func main() {
@@ -54,14 +57,26 @@ func main() {
 
 	q := db.New(pool)
 	authSvc := services.NewAuthService(q)
+	profileSvc := services.NewProfileService(q)
+	listingSvc := services.NewListingService(q)
+	inquirySvc := services.NewInquiryService(q)
+
+	var chatSvc *chat.Service // nil: chatbot disabled, chat routes answer 503
+	if cfg.AnthropicKey != "" {
+		client := anthropic.NewClient(option.WithAPIKey(cfg.AnthropicKey))
+		chatSvc = chat.NewService(client, cfg.ChatModel, pool, profileSvc, listingSvc, inquirySvc)
+	}
+	log.Info("chatbot", "enabled", chatSvc != nil, "model", cfg.ChatModel)
+
 	sessions := auth.NewSessions(cfg.SessionSecret, cfg.CookieSecure)
 	handler := server.Routes(server.Handlers{
-		Profile:       handlers.NewProfileHandler(services.NewProfileService(q)),
-		Listings:      handlers.NewListingsHandler(services.NewListingService(q)),
+		Profile:       handlers.NewProfileHandler(profileSvc, chatSvc != nil),
+		Listings:      handlers.NewListingsHandler(listingSvc),
 		Auth:          handlers.NewAuthHandler(authSvc, sessions),
-		Inquiries:     handlers.NewInquiriesHandler(services.NewInquiryService(q)),
+		Inquiries:     handlers.NewInquiriesHandler(inquirySvc),
 		AdminListings: handlers.NewAdminListingsHandler(services.NewAdminListingService(q), services.NewMediaService(q, cfg.UploadDir)),
 		Media:         handlers.NewMediaHandler(cfg.UploadDir),
+		Chat:          handlers.NewChatHandler(chatSvc),
 	}, server.Security{
 		AppOrigin:  cfg.AppOrigin,
 		TrustProxy: cfg.TrustProxy,

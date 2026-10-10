@@ -16,6 +16,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 
@@ -24,6 +26,7 @@ import (
 	"brickbot/internal/handlers"
 	"brickbot/internal/server"
 	"brickbot/internal/services"
+	"brickbot/internal/services/chat"
 )
 
 const (
@@ -39,7 +42,15 @@ type env struct {
 	uploadDir string
 }
 
+// newEnv builds the API with the chatbot disabled.
 func newEnv(t *testing.T) *env {
+	t.Helper()
+	return newEnvWithChat(t, "")
+}
+
+// newEnvWithChat enables the chatbot against a fake Anthropic API at
+// anthropicURL; "" leaves it disabled. Tests never reach the real API.
+func newEnvWithChat(t *testing.T, anthropicURL string) *env {
 	t.Helper()
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
@@ -51,7 +62,7 @@ func newEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	if _, err := pool.Exec(ctx, "TRUNCATE inquiries, listing_media, listings, salesman_profile"); err != nil {
+	if _, err := pool.Exec(ctx, "TRUNCATE inquiries, chat_messages, chat_sessions, listing_media, listings, salesman_profile"); err != nil {
 		t.Fatal(err)
 	}
 	hash, _ := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.MinCost)
@@ -64,14 +75,23 @@ func newEnv(t *testing.T) *env {
 
 	uploadDir := t.TempDir()
 	authSvc := services.NewAuthService(q)
+	profileSvc := services.NewProfileService(q)
+	listingSvc := services.NewListingService(q)
+	inquirySvc := services.NewInquiryService(q)
+	var chatSvc *chat.Service
+	if anthropicURL != "" {
+		client := anthropic.NewClient(option.WithAPIKey("test-key"), option.WithBaseURL(anthropicURL), option.WithMaxRetries(0))
+		chatSvc = chat.NewService(client, "claude-haiku-5-5", pool, profileSvc, listingSvc, inquirySvc)
+	}
 	sessions := auth.NewSessions([]byte(strings.Repeat("t", 32)), false)
 	h := server.Routes(server.Handlers{
-		Profile:       handlers.NewProfileHandler(services.NewProfileService(q)),
-		Listings:      handlers.NewListingsHandler(services.NewListingService(q)),
+		Profile:       handlers.NewProfileHandler(profileSvc, chatSvc != nil),
+		Listings:      handlers.NewListingsHandler(listingSvc),
 		Auth:          handlers.NewAuthHandler(authSvc, sessions),
-		Inquiries:     handlers.NewInquiriesHandler(services.NewInquiryService(q)),
+		Inquiries:     handlers.NewInquiriesHandler(inquirySvc),
 		AdminListings: handlers.NewAdminListingsHandler(services.NewAdminListingService(q), services.NewMediaService(q, uploadDir)),
 		Media:         handlers.NewMediaHandler(uploadDir),
+		Chat:          handlers.NewChatHandler(chatSvc),
 	}, server.Security{AppOrigin: appOrigin, Sessions: sessions, Checker: authSvc})
 	return &env{t: t, h: h, q: q, uploadDir: uploadDir}
 }

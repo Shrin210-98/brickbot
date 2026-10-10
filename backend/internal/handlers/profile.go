@@ -9,12 +9,14 @@ import (
 
 // ProfileHandler serves the public salesman profile.
 type ProfileHandler struct {
-	svc *services.ProfileService
+	svc         *services.ProfileService
+	chatEnabled bool
 }
 
-// NewProfileHandler returns a ProfileHandler.
-func NewProfileHandler(svc *services.ProfileService) *ProfileHandler {
-	return &ProfileHandler{svc: svc}
+// NewProfileHandler returns a ProfileHandler. chatEnabled tells the SPA
+// whether to show the chat launcher.
+func NewProfileHandler(svc *services.ProfileService, chatEnabled bool) *ProfileHandler {
+	return &ProfileHandler{svc: svc, chatEnabled: chatEnabled}
 }
 
 type contactDTO struct {
@@ -32,6 +34,7 @@ type profileDTO struct {
 	CountryCode    string     `json:"country_code"`
 	Currency       string     `json:"currency"`
 	AreaUnit       string     `json:"area_unit"`
+	ChatEnabled    bool       `json:"chat_enabled"`
 }
 
 // Get handles GET /api/profile.
@@ -60,5 +63,6 @@ func (h *ProfileHandler) Get(w http.ResponseWriter, r *http.Request) {
 		CountryCode:    p.CountryCode,
 		Currency:       p.Currency,
 		AreaUnit:       p.AreaUnit,
+		ChatEnabled:    h.chatEnabled,
 	})
 }
