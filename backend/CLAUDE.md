@@ -5,8 +5,9 @@ Go module `brickbot`. Dependencies point one way: **handlers → services → db
 | Package | Responsibility |
 |---|---|
 | `cmd/api` | Wire config, pool, services, handlers; graceful shutdown |
-| `cmd/seed` | Idempotent seed from `seed/*.json`; hashes `ADMIN_PASSWORD` only when the profile row is new |
-| `internal/config` | Typed env config, fail fast |
+| `cmd/seed` | Idempotent seed from `seed/*.json`; stores `ADMIN_EMAIL` and hashes `ADMIN_PASSWORD` only when the profile row is new |
+| `internal/config` | Typed env config, fail fast (`SESSION_SECRET` ≥ 32 bytes) |
+| `internal/auth` | Stateless HMAC session cookie (`bb_session`); no sessions table |
 | `internal/db` | **sqlc output (never edit by hand)** + `pool.go` |
 | `internal/services` | Business logic; domain errors `ErrNotFound`/`ErrConflict`/`ErrInvalid` |
 | `internal/services/chat` | Catalog cache, tools, Anthropic stream and tool loop, persistence |
@@ -37,6 +38,7 @@ Follow `docs/chatbot.md`:
 
 ## Testing
 `make test` runs `go test ./...` with `DATABASE_URL` pointed at the `brickbot_test` database (migrated first). Prefer table-driven tests.
+DB-backed tests truncate every table, so they live only in `internal/handlers` (end-to-end through `server.Routes`); other packages keep pure unit tests so parallel package runs never collide.
 
 ## Handler shape
 decode → validate.Struct (422 with `fields`) → service → map domain error

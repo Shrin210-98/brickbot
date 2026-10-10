@@ -15,6 +15,7 @@ CREATE TABLE salesman_profile (
   country_code        text        NOT NULL DEFAULT 'IN',
   currency            text        NOT NULL DEFAULT 'INR',
   area_unit           text        NOT NULL DEFAULT 'sqft' CHECK (area_unit IN ('sqft', 'sqm')),
+  admin_email         text        NOT NULL DEFAULT '',     -- login email, set by seed from ADMIN_EMAIL; not shown publicly
   admin_password_hash text        NOT NULL,                -- bcrypt
   created_at          timestamptz NOT NULL DEFAULT now(),
   updated_at          timestamptz NOT NULL DEFAULT now()
@@ -36,6 +37,7 @@ CREATE TABLE listings (
   locality      text        NOT NULL DEFAULT '',
   address       text        NOT NULL DEFAULT '',
   featured      boolean     NOT NULL DEFAULT false,
+  deleted_at    timestamptz,                             -- soft delete; every query filters deleted_at IS NULL
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
@@ -52,3 +54,22 @@ CREATE TABLE listing_media (
 );
 
 CREATE INDEX listing_media_listing_id_position_idx ON listing_media (listing_id, position);
+
+-- Leads from the public inquiry form (source = 'form') and, later, the chatbot (source = 'chat').
+CREATE TABLE inquiries (
+  id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  listing_id uuid        REFERENCES listings (id) ON DELETE SET NULL,
+  name       text        NOT NULL,
+  phone      text        NOT NULL DEFAULT '',
+  email      text        NOT NULL DEFAULT '',
+  message    text        NOT NULL DEFAULT '',
+  source     text        NOT NULL DEFAULT 'form' CHECK (source IN ('form', 'chat')),
+  status     text        NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'closed', 'spam')),
+  admin_note text        NOT NULL DEFAULT '',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT inquiries_contact_check CHECK (phone <> '' OR email <> '')
+);
+
+CREATE INDEX inquiries_status_created_at_idx ON inquiries (status, created_at DESC);
+CREATE INDEX inquiries_listing_id_idx ON inquiries (listing_id);

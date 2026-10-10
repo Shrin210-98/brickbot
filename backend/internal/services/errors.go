@@ -6,7 +6,8 @@ import "errors"
 
 // Domain errors. Wrap with fmt.Errorf("%w: ...") to add a client-safe message.
 var (
-	ErrNotFound = errors.New("not found")
-	ErrConflict = errors.New("conflict")
-	ErrInvalid  = errors.New("invalid")
+	ErrNotFound     = errors.New("not found")
+	ErrConflict     = errors.New("conflict")
+	ErrInvalid      = errors.New("invalid")
+	ErrUnauthorized = errors.New("unauthorized")
 )

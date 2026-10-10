@@ -158,17 +158,7 @@ func (h *ListingsHandler) Get(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, r, err)
 		return
 	}
-	media := make([]mediaDTO, len(l.Media))
-	for i, m := range l.Media {
-		media[i] = mediaDTO{ID: uuidString(m.ID), URL: mediaURL(m.Path), MediaType: m.MediaType, Position: m.Position}
-	}
-	httpx.WriteJSON(w, http.StatusOK, listingDetailDTO{
-		listingSummaryDTO: toSummary(l),
-		Description:       l.Description,
-		Address:           l.Address,
-		Media:             media,
-		UpdatedAt:         timeOf(l.UpdatedAt),
-	})
+	httpx.WriteJSON(w, http.StatusOK, toDetail(l))
 }
 
 // Facets handles GET /api/listings/facets.
@@ -229,6 +219,24 @@ func toSummary(l services.ListingWithMedia) listingSummaryDTO {
 		CoverURL:     coverURL(l.Media),
 		CreatedAt:    timeOf(l.CreatedAt),
 	}
+}
+
+func toDetail(l services.ListingWithMedia) listingDetailDTO {
+	media := make([]mediaDTO, len(l.Media))
+	for i, m := range l.Media {
+		media[i] = toMedia(m)
+	}
+	return listingDetailDTO{
+		listingSummaryDTO: toSummary(l),
+		Description:       l.Description,
+		Address:           l.Address,
+		Media:             media,
+		UpdatedAt:         timeOf(l.UpdatedAt),
+	}
+}
+
+func toMedia(m db.ListingMedia) mediaDTO {
+	return mediaDTO{ID: uuidString(m.ID), URL: mediaURL(m.Path), MediaType: m.MediaType, Position: m.Position}
 }
 
 // coverURL is the first image by position, or nil.

@@ -13,6 +13,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"brickbot/internal/auth"
+	"brickbot/internal/config"
 	"brickbot/internal/db"
 	"brickbot/internal/handlers"
 	"brickbot/internal/server"
@@ -23,20 +25,20 @@ func main() {
 	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(log)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	cfg, err := config.Load(os.Getenv)
+	if err != nil {
+		log.Error("config", "err", err)
+		os.Exit(1)
 	}
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		log.Error("DATABASE_URL is required")
+	if err := os.MkdirAll(cfg.UploadDir, 0o750); err != nil {
+		log.Error("upload dir", "err", err)
 		os.Exit(1)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	pool, err := pgxpool.New(ctx, dbURL)
+	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
 	if err != nil {
 		log.Error("db pool", "err", err)
 		os.Exit(1)
@@ -51,14 +53,25 @@ func main() {
 	}
 
 	q := db.New(pool)
-	mux := server.Routes(
-		handlers.NewProfileHandler(services.NewProfileService(q)),
-		handlers.NewListingsHandler(services.NewListingService(q)),
-	)
+	authSvc := services.NewAuthService(q)
+	sessions := auth.NewSessions(cfg.SessionSecret, cfg.CookieSecure)
+	handler := server.Routes(server.Handlers{
+		Profile:       handlers.NewProfileHandler(services.NewProfileService(q)),
+		Listings:      handlers.NewListingsHandler(services.NewListingService(q)),
+		Auth:          handlers.NewAuthHandler(authSvc, sessions),
+		Inquiries:     handlers.NewInquiriesHandler(services.NewInquiryService(q)),
+		AdminListings: handlers.NewAdminListingsHandler(services.NewAdminListingService(q), services.NewMediaService(q, cfg.UploadDir)),
+		Media:         handlers.NewMediaHandler(cfg.UploadDir),
+	}, server.Security{
+		AppOrigin:  cfg.AppOrigin,
+		TrustProxy: cfg.TrustProxy,
+		Sessions:   sessions,
+		Checker:    authSvc,
+	})
 
 	srv := &http.Server{
-		Addr:              ":" + port,
-		Handler:           mux,
+		Addr:              ":" + cfg.Port,
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

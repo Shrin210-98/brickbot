@@ -13,7 +13,8 @@ Base path: `/api`. JSON in and out, `snake_case` field names. Updated whenever a
 | Status | `code` | When |
 |---|---|---|
 | 400 | `bad_request` | Malformed JSON / query params |
-| 401 | `unauthorized` | Missing or invalid admin cookie |
+| 401 | `unauthorized` | Missing or invalid admin cookie; wrong login credentials |
+| 403 | `forbidden` | Non-GET request whose `Origin` header is not `APP_ORIGIN` |
 | 404 | `not_found` | Resource does not exist (or is not public) |
 | 409 | `conflict` | Unique violation, concurrent chat stream |
 | 413 | `payload_too_large` | Body / upload over limit |
@@ -23,6 +24,14 @@ Base path: `/api`. JSON in and out, `snake_case` field names. Updated whenever a
 | 503 | `unavailable` | Chatbot disabled (no API key) |
 
 **Pagination:** `?page=1&page_size=20` → `{"items": [...], "total": 0, "page": 1, "page_size": 20}`.
+
+**JSON bodies:** at most 1 MB (`413` above), unknown fields and malformed JSON → `400 bad_request`.
+
+**Ids** in paths are UUIDs. A malformed id → `404 not_found`.
+
+**Origin check:** `POST`/`PUT`/`PATCH`/`DELETE` with an `Origin` header other than `APP_ORIGIN` (default `http://localhost:5173`) → `403 forbidden`. Requests without `Origin` pass.
+
+**Rate limits** (in memory, per client IP; `X-Forwarded-For` last hop only when `TRUST_PROXY=true`): `POST /api/inquiries` 5/min, `POST /api/auth/login` 5 per 15 min, each with a burst of 5. Over the limit → `429 rate_limited` with `Retry-After` (seconds).
 
 ## Public
 
@@ -34,8 +43,10 @@ Base path: `/api`. JSON in and out, `snake_case` field names. Updated whenever a
 | GET | `/api/listings/featured` | — | Up to 6 featured listings |
 | GET | `/api/listings/facets` | — | Filter options with counts |
 | GET | `/api/listings/{slug}` | — | One listing with media |
+| POST | `/api/inquiries` | — (rate-limited) | Visitor inquiry |
+| GET | `/media/{path...}` | — | Uploaded files |
 
-Public routes only ever expose listings with `status = 'active'`. Media and photo URLs are `/media/<path>`.
+Public routes only ever expose listings with `status = 'active'` that are not soft-deleted. Media and photo URLs are `/media/<path>`.
 
 ### `GET /api/healthz`
 Liveness. `200 {"status":"ok"}`. Static response; the API refuses to start if the initial DB ping fails.
@@ -117,12 +128,145 @@ Counts over active listings, for building filter UIs. Every array may be empty.
 ```
 `404 not_found` if no active listing has that slug.
 
+### `POST /api/inquiries`
+```json
+{"name": "Asha", "phone": "+91 98765 43210", "email": "asha@example.com", "message": "Is it still available?", "listing_slug": "2bhk-andheri-west"}
+```
+| Field | Rules |
+|---|---|
+| `name` | required, ≤100 |
+| `phone` | required unless `email`; `+` optional, then 7–20 digits/spaces/`-`/`()` |
+| `email` | required unless `phone`; valid email ≤254 |
+| `message` | optional, ≤2000 |
+| `listing_slug` | optional; must be an active listing, else `404 not_found` |
+
+Strings are trimmed. Neither `phone` nor `email` → `422` with both in `fields`.
+`201 {"id": "…", "created_at": "…"}`. Also `400`, `403`, `413`, `429`.
+
+### `GET /media/{path...}`
+Serves files from `UPLOAD_DIR`. Directories, hidden files and missing files → `404 not_found` (JSON envelope). `Cache-Control: public, max-age=86400`, `X-Content-Type-Options: nosniff`. Listing images live at `/media/listings/<listing id>/<random uuid>.<jpg|png|webp>`.
+
+## Auth
+
+One admin, credentials on the profile row (`admin_email`, bcrypt `admin_password_hash`), set by `make seed` from `ADMIN_EMAIL`/`ADMIN_PASSWORD` when the profile is first created.
+
+The session is a stateless cookie `bb_session`: `HttpOnly`, `SameSite=Lax`, `Path=/api`, `Secure` per `COOKIE_SECURE`, valid 7 days (no sliding renewal). It is HMAC-SHA256 signed with `SESSION_SECRET` and bound to a fingerprint of the password hash, so changing the password logs out every session. Logout only clears the cookie in the browser; a copied cookie stays valid until it expires or the password changes.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| POST | `/api/auth/login` | — (rate-limited) | Log in, set cookie |
+| POST | `/api/auth/logout` | — | Clear cookie |
+| GET | `/api/auth/me` | cookie | Current admin |
+
+### `POST /api/auth/login`
+`{"email": "…", "password": "…"}` (`email` required + valid, `password` required ≤200). Email compare is case-insensitive.
+`204` with `Set-Cookie`. Wrong email or password → `401 unauthorized` (same response for both). Also `400`, `403`, `422`, `429`.
+
+### `POST /api/auth/logout`
+`204`, always; expires the cookie.
+
+### `GET /api/auth/me`
+`200 {"email": "admin@example.com"}`, or `401`.
+
+## Admin
+
+Everything under `/api/admin/` needs a valid cookie: without one, **every** path there (including unknown ones) → `401 unauthorized`. Soft-deleted listings behave as if they do not exist (`404`).
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/admin/listings` | Paginated listings, any status |
+| POST | `/api/admin/listings` | Create listing |
+| GET | `/api/admin/listings/{id}` | One listing with media |
+| PUT | `/api/admin/listings/{id}` | Replace listing fields |
+| DELETE | `/api/admin/listings/{id}` | Soft delete |
+| POST | `/api/admin/listings/{id}/media` | Upload one image |
+| PUT | `/api/admin/listings/{id}/media/{media_id}` | Replace one image's file |
+| PATCH | `/api/admin/listings/{id}/media/order` | Reorder images |
+| DELETE | `/api/admin/listings/{id}/media/{media_id}` | Delete one image |
+| GET | `/api/admin/inquiries` | Paginated inquiries |
+| GET | `/api/admin/inquiries/{id}` | One inquiry |
+| PATCH | `/api/admin/inquiries/{id}` | Triage inquiry |
+
+### `GET /api/admin/listings`
+`?status=draft|active|sold|rented` (optional), `page`, `page_size`. Newest first, soft-deleted excluded.
+`200`: paginated envelope of listing summaries (same shape as `GET /api/listings`).
+
+### `POST /api/admin/listings` · `PUT /api/admin/listings/{id}`
+```json
+{
+  "slug": "2bhk-andheri-west", "title": "2 BHK in Andheri West", "description": "…",
+  "purpose": "sale", "property_type": "apartment", "status": "draft",
+  "price": 18500000, "bedrooms": 2, "bathrooms": 2, "area": 950,
+  "city": "Mumbai", "locality": "Andheri West", "address": "…", "featured": false
+}
+```
+| Field | Rules |
+|---|---|
+| `slug` | optional; `^[a-z0-9]+(-[a-z0-9]+)*$`, ≤120. Create: omitted → generated from `title` (`-2`, `-3`… on collision). Update: omitted → unchanged |
+| `title` | required, ≤200 |
+| `description` | ≤10000 |
+| `purpose` | required, `sale` \| `rent` |
+| `property_type` | required, `apartment` \| `house` \| `villa` \| `plot` \| `commercial` \| `other` |
+| `status` | `draft` \| `active` \| `sold` \| `rented`. Create: omitted → `draft`. Update: omitted → unchanged |
+| `price` | required, integer ≥0 |
+| `bedrooms`, `bathrooms` | optional, 0–50, `null` to clear |
+| `area` | optional, ≥1, `null` to clear |
+| `city` | required, ≤100 |
+| `locality` | ≤100 |
+| `address` | ≤300 |
+| `featured` | boolean, default `false` |
+
+`PUT` replaces every field: omitted optional fields are cleared (except `slug` and `status`, see above).
+Create `201`, update `200`: a listing detail (same shape as `GET /api/listings/{slug}`). Slug taken (including by a soft-deleted listing) → `409 conflict`. Also `400`, `404` (update), `422`.
+
+### `GET /api/admin/listings/{id}`
+`200`: listing detail, any status. `404` if missing or soft-deleted.
+
+### `DELETE /api/admin/listings/{id}`
+Soft delete (`deleted_at` set). The listing disappears from every public and admin route; its slug stays reserved and its media files stay on disk. `204`, or `404`.
+
+### `POST /api/admin/listings/{id}/media`
+`multipart/form-data` with one part named `file`: JPEG, PNG or WebP (detected from the bytes, not the name), at most 10 MB. Appended after the existing media.
+`201`: `{"id": "…", "url": "/media/listings/…/….png", "media_type": "image", "position": 2}`.
+Not multipart or no `file` part → `400`. Too large → `413`. Not an accepted image → `422` with `fields.file`. Unknown listing → `404`.
+
+### `PUT /api/admin/listings/{id}/media/{media_id}`
+Same body as upload. Replaces the file behind one media item; `id` and `position` stay, the `url` changes (new file name) and the old file is deleted. `200` media object, or `400`/`404`/`413`/`422`.
+
+### `PATCH /api/admin/listings/{id}/media/order`
+`{"media_ids": ["…", "…"]}`: every media id of the listing, exactly once, in the new order (position = index). `204`. Missing, extra, unknown or duplicate ids → `422` with `fields.media_ids`. The first image is the listing's cover.
+
+### `DELETE /api/admin/listings/{id}/media/{media_id}`
+Deletes the row and the file. `204`, or `404`.
+
+### `GET /api/admin/inquiries`
+`?status=new|contacted|closed|spam` (optional), `page`, `page_size`. Newest first.
+`200`: paginated envelope of inquiries:
+```json
+{
+  "id": "…",
+  "listing": {"id": "…", "slug": "2bhk-andheri-west", "title": "2 BHK in Andheri West"},
+  "name": "Asha", "phone": "+91 98765 43210", "email": "", "message": "…",
+  "source": "form", "status": "new", "admin_note": "",
+  "created_at": "…", "updated_at": "…"
+}
+```
+`listing` is `null` for a general inquiry. `source` is `form` (later also `chat`).
+
+### `GET /api/admin/inquiries/{id}`
+`200` one inquiry, or `404`.
+
+### `PATCH /api/admin/inquiries/{id}`
+`{"status": "contacted", "admin_note": "Called back, visit on Sat"}`. At least one field; an omitted field is unchanged. `status` one of `new`, `contacted`, `closed`, `spam`; `admin_note` ≤5000.
+`200` updated inquiry. Neither field or invalid values → `422`. Also `404`.
+
 ## Data layer
 
 Schema: `backend/db/schema.sql`. Queries: `backend/db/queries/` → `backend/internal/db` (sqlc).
 
 | Table | Queries |
 |---|---|
-| `salesman_profile` (singleton, `id = 1`) | `GetProfile`, `CreateProfileIfMissing` (seed), `UpdateProfile`, `UpdateAdminPasswordHash` |
-| `listings` | Public (`status = 'active'` only): `ListActiveListings`, `CountActiveListings`, `ListFeaturedListings`, `GetActiveListingBySlug`, `FacetPurposes`, `FacetPropertyTypes`, `FacetCities`, `FacetLocalities`, `FacetBedrooms`. Admin: `ListListings`, `CountListings`, `GetListing`, `CreateListing`, `UpdateListing`, `DeleteListing`. Seed: `UpsertListingBySlug` |
-| `listing_media` | `ListListingMedia`, `ListMediaForListings` (batch), `CreateListingMedia`, `UpdateListingMediaPosition`, `DeleteListingMedia` |
+| `salesman_profile` (singleton, `id = 1`) | `GetProfile`, `GetAdminCredentials`, `CreateProfileIfMissing` (seed), `UpdateProfile`, `UpdateAdminPasswordHash` |
+| `listings` (soft delete via `deleted_at`; every query filters it) | Public (`status = 'active'` only): `ListActiveListings`, `CountActiveListings`, `ListFeaturedListings`, `GetActiveListingBySlug`, `FacetPurposes`, `FacetPropertyTypes`, `FacetCities`, `FacetLocalities`, `FacetBedrooms`. Admin: `ListListings`, `CountListings`, `GetListing`, `ListingSlugExists`, `CreateListing`, `UpdateListing`, `DeleteListing` (soft). Seed: `UpsertListingBySlug` |
+| `listing_media` | `ListListingMedia`, `ListMediaForListings` (batch), `GetListingMedia`, `NextListingMediaPosition`, `CreateListingMedia`, `UpdateListingMediaPath`, `UpdateListingMediaPosition`, `ReorderListingMedia`, `DeleteListingMedia` |
+| `inquiries` | `CreateInquiry`, `ListInquiries`, `CountInquiries`, `GetInquiry`, `UpdateInquiry` |

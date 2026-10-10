@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -22,7 +24,25 @@ func newValidator() *validator.Validate {
 		}
 		return name
 	})
+	mustRegister(v, "slug", slugRE)
+	mustRegister(v, "phone", phoneRE)
 	return v
+}
+
+var (
+	// slugRE: lowercase letters and digits in groups joined by single hyphens.
+	slugRE = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+	// phoneRE: optional +, then digits with spaces, hyphens or parentheses.
+	phoneRE = regexp.MustCompile(`^\+?[0-9][0-9 ()-]{5,18}[0-9]$`)
+)
+
+func mustRegister(v *validator.Validate, tag string, re *regexp.Regexp) {
+	err := v.RegisterValidation(tag, func(fl validator.FieldLevel) bool {
+		return re.MatchString(fl.Field().String())
+	})
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Validate runs struct validation. On failure it writes a 422 with per-field
@@ -49,6 +69,16 @@ func fieldMessage(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":
 		return "is required"
+	case "required_without":
+		return "is required unless " + snakeCase(fe.Param()) + " is given"
+	case "email":
+		return "must be a valid email"
+	case "uuid":
+		return "must be a UUID"
+	case "slug":
+		return "must be lowercase letters and digits separated by single hyphens"
+	case "phone":
+		return "must be a valid phone number"
 	case "oneof":
 		return "must be one of: " + strings.ReplaceAll(fe.Param(), " ", ", ")
 	case "min":
@@ -64,4 +94,19 @@ func fieldMessage(fe validator.FieldError) string {
 	default:
 		return "is invalid"
 	}
+}
+
+// snakeCase maps a Go field name (AdminNote) to its JSON name (admin_note).
+func snakeCase(s string) string {
+	var b strings.Builder
+	for i, r := range s {
+		if unicode.IsUpper(r) {
+			if i > 0 {
+				b.WriteByte('_')
+			}
+			r = unicode.ToLower(r)
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }

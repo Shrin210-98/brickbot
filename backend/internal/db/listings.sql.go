@@ -13,7 +13,7 @@ import (
 
 const countActiveListings = `-- name: CountActiveListings :one
 SELECT count(*) FROM listings
-WHERE status = 'active'
+WHERE status = 'active' AND deleted_at IS NULL
   AND ($1::text  IS NULL OR listing_type  = $1)
   AND ($2::text IS NULL OR property_type = $2)
   AND ($3::text          IS NULL OR lower(city)     = lower($3))
@@ -57,7 +57,8 @@ func (q *Queries) CountActiveListings(ctx context.Context, arg CountActiveListin
 
 const countListings = `-- name: CountListings :one
 SELECT count(*) FROM listings
-WHERE ($1::text IS NULL OR status = $1)
+WHERE deleted_at IS NULL
+  AND ($1::text IS NULL OR status = $1)
 `
 
 func (q *Queries) CountListings(ctx context.Context, status *string) (int64, error) {
@@ -74,7 +75,7 @@ INSERT INTO listings (
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
 )
-RETURNING id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, created_at, updated_at
+RETURNING id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, deleted_at, created_at, updated_at
 `
 
 type CreateListingParams struct {
@@ -128,6 +129,7 @@ func (q *Queries) CreateListing(ctx context.Context, arg CreateListingParams) (L
 		&i.Locality,
 		&i.Address,
 		&i.Featured,
+		&i.DeletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -167,9 +169,11 @@ func (q *Queries) CreateListingMedia(ctx context.Context, arg CreateListingMedia
 }
 
 const deleteListing = `-- name: DeleteListing :execrows
-DELETE FROM listings WHERE id = $1
+UPDATE listings SET deleted_at = now(), updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL
 `
 
+// Soft delete. Media rows and files are kept.
 func (q *Queries) DeleteListing(ctx context.Context, id pgtype.UUID) (int64, error) {
 	result, err := q.db.Exec(ctx, deleteListing, id)
 	if err != nil {
@@ -205,7 +209,7 @@ func (q *Queries) DeleteListingMedia(ctx context.Context, arg DeleteListingMedia
 
 const facetBedrooms = `-- name: FacetBedrooms :many
 SELECT bedrooms::bigint AS bedrooms, count(*) AS count
-FROM listings WHERE status = 'active' AND bedrooms IS NOT NULL
+FROM listings WHERE status = 'active' AND deleted_at IS NULL AND bedrooms IS NOT NULL
 GROUP BY bedrooms ORDER BY bedrooms
 `
 
@@ -236,7 +240,7 @@ func (q *Queries) FacetBedrooms(ctx context.Context) ([]FacetBedroomsRow, error)
 
 const facetCities = `-- name: FacetCities :many
 SELECT city, count(*) AS count
-FROM listings WHERE status = 'active'
+FROM listings WHERE status = 'active' AND deleted_at IS NULL
 GROUP BY city ORDER BY city
 `
 
@@ -267,7 +271,7 @@ func (q *Queries) FacetCities(ctx context.Context) ([]FacetCitiesRow, error) {
 
 const facetLocalities = `-- name: FacetLocalities :many
 SELECT city, locality, count(*) AS count
-FROM listings WHERE status = 'active' AND locality <> ''
+FROM listings WHERE status = 'active' AND deleted_at IS NULL AND locality <> ''
 GROUP BY city, locality ORDER BY city, locality
 `
 
@@ -299,7 +303,7 @@ func (q *Queries) FacetLocalities(ctx context.Context) ([]FacetLocalitiesRow, er
 
 const facetPropertyTypes = `-- name: FacetPropertyTypes :many
 SELECT property_type, count(*) AS count
-FROM listings WHERE status = 'active'
+FROM listings WHERE status = 'active' AND deleted_at IS NULL
 GROUP BY property_type ORDER BY property_type
 `
 
@@ -331,7 +335,7 @@ func (q *Queries) FacetPropertyTypes(ctx context.Context) ([]FacetPropertyTypesR
 const facetPurposes = `-- name: FacetPurposes :many
 
 SELECT listing_type, count(*) AS count, min(price)::bigint AS min_price, max(price)::bigint AS max_price
-FROM listings WHERE status = 'active'
+FROM listings WHERE status = 'active' AND deleted_at IS NULL
 GROUP BY listing_type ORDER BY listing_type
 `
 
@@ -342,7 +346,7 @@ type FacetPurposesRow struct {
 	MaxPrice    int64
 }
 
-// ---------- facets (active listings only) ----------
+// ---------- facets (active, non-deleted listings only) ----------
 func (q *Queries) FacetPurposes(ctx context.Context) ([]FacetPurposesRow, error) {
 	rows, err := q.db.Query(ctx, facetPurposes)
 	if err != nil {
@@ -369,7 +373,7 @@ func (q *Queries) FacetPurposes(ctx context.Context) ([]FacetPurposesRow, error)
 }
 
 const getActiveListingBySlug = `-- name: GetActiveListingBySlug :one
-SELECT id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, created_at, updated_at FROM listings WHERE slug = $1 AND status = 'active'
+SELECT id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, deleted_at, created_at, updated_at FROM listings WHERE slug = $1 AND status = 'active' AND deleted_at IS NULL
 `
 
 func (q *Queries) GetActiveListingBySlug(ctx context.Context, slug string) (Listing, error) {
@@ -391,6 +395,7 @@ func (q *Queries) GetActiveListingBySlug(ctx context.Context, slug string) (List
 		&i.Locality,
 		&i.Address,
 		&i.Featured,
+		&i.DeletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -398,7 +403,7 @@ func (q *Queries) GetActiveListingBySlug(ctx context.Context, slug string) (List
 }
 
 const getListing = `-- name: GetListing :one
-SELECT id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, created_at, updated_at FROM listings WHERE id = $1
+SELECT id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, deleted_at, created_at, updated_at FROM listings WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetListing(ctx context.Context, id pgtype.UUID) (Listing, error) {
@@ -420,16 +425,40 @@ func (q *Queries) GetListing(ctx context.Context, id pgtype.UUID) (Listing, erro
 		&i.Locality,
 		&i.Address,
 		&i.Featured,
+		&i.DeletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
+const getListingMedia = `-- name: GetListingMedia :one
+SELECT id, listing_id, path, media_type, position, created_at FROM listing_media WHERE id = $1 AND listing_id = $2
+`
+
+type GetListingMediaParams struct {
+	ID        pgtype.UUID
+	ListingID pgtype.UUID
+}
+
+func (q *Queries) GetListingMedia(ctx context.Context, arg GetListingMediaParams) (ListingMedia, error) {
+	row := q.db.QueryRow(ctx, getListingMedia, arg.ID, arg.ListingID)
+	var i ListingMedia
+	err := row.Scan(
+		&i.ID,
+		&i.ListingID,
+		&i.Path,
+		&i.MediaType,
+		&i.Position,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listActiveListings = `-- name: ListActiveListings :many
 
-SELECT id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, created_at, updated_at FROM listings
-WHERE status = 'active'
+SELECT id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, deleted_at, created_at, updated_at FROM listings
+WHERE status = 'active' AND deleted_at IS NULL
   AND ($1::text  IS NULL OR listing_type  = $1)
   AND ($2::text IS NULL OR property_type = $2)
   AND ($3::text          IS NULL OR lower(city)     = lower($3))
@@ -464,7 +493,7 @@ type ListActiveListingsParams struct {
 }
 
 // ---------- listings ----------
-// Public catalog: only status = 'active'. Optional filters are NULL to skip.
+// Public catalog: only status = 'active' and not soft-deleted. Optional filters are NULL to skip.
 // q is matched with ILIKE; the caller escapes % _ \ in it.
 // sort: 'price_asc' | 'price_desc' | anything else = newest first.
 func (q *Queries) ListActiveListings(ctx context.Context, arg ListActiveListingsParams) ([]Listing, error) {
@@ -504,6 +533,7 @@ func (q *Queries) ListActiveListings(ctx context.Context, arg ListActiveListings
 			&i.Locality,
 			&i.Address,
 			&i.Featured,
+			&i.DeletedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -518,8 +548,8 @@ func (q *Queries) ListActiveListings(ctx context.Context, arg ListActiveListings
 }
 
 const listFeaturedListings = `-- name: ListFeaturedListings :many
-SELECT id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, created_at, updated_at FROM listings
-WHERE status = 'active' AND featured
+SELECT id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, deleted_at, created_at, updated_at FROM listings
+WHERE status = 'active' AND deleted_at IS NULL AND featured
 ORDER BY created_at DESC, id
 LIMIT $1::bigint
 `
@@ -549,6 +579,7 @@ func (q *Queries) ListFeaturedListings(ctx context.Context, limit int64) ([]List
 			&i.Locality,
 			&i.Address,
 			&i.Featured,
+			&i.DeletedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -596,19 +627,20 @@ func (q *Queries) ListListingMedia(ctx context.Context, listingID pgtype.UUID) (
 }
 
 const listListings = `-- name: ListListings :many
-SELECT id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, created_at, updated_at FROM listings
-WHERE ($1::text IS NULL OR status = $1)
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $2
+SELECT id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, deleted_at, created_at, updated_at FROM listings
+WHERE deleted_at IS NULL
+  AND ($1::text IS NULL OR status = $1)
+ORDER BY created_at DESC, id
+LIMIT $3::bigint OFFSET $2::bigint
 `
 
 type ListListingsParams struct {
 	Status *string
-	Offset int32
-	Limit  int32
+	Offset int64
+	Limit  int64
 }
 
-// Admin: every status, optional status filter.
+// Admin: every status except soft-deleted, optional status filter.
 func (q *Queries) ListListings(ctx context.Context, arg ListListingsParams) ([]Listing, error) {
 	rows, err := q.db.Query(ctx, listListings, arg.Status, arg.Offset, arg.Limit)
 	if err != nil {
@@ -634,6 +666,7 @@ func (q *Queries) ListListings(ctx context.Context, arg ListListingsParams) ([]L
 			&i.Locality,
 			&i.Address,
 			&i.Featured,
+			&i.DeletedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -681,13 +714,56 @@ func (q *Queries) ListMediaForListings(ctx context.Context, listingIds []pgtype.
 	return items, nil
 }
 
+const listingSlugExists = `-- name: ListingSlugExists :one
+SELECT EXISTS (SELECT 1 FROM listings WHERE slug = $1)
+`
+
+// Includes soft-deleted rows: their slugs stay reserved by the UNIQUE constraint.
+func (q *Queries) ListingSlugExists(ctx context.Context, slug string) (bool, error) {
+	row := q.db.QueryRow(ctx, listingSlugExists, slug)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const nextListingMediaPosition = `-- name: NextListingMediaPosition :one
+SELECT COALESCE(max(position) + 1, 0)::int AS position FROM listing_media WHERE listing_id = $1
+`
+
+func (q *Queries) NextListingMediaPosition(ctx context.Context, listingID pgtype.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, nextListingMediaPosition, listingID)
+	var position int32
+	err := row.Scan(&position)
+	return position, err
+}
+
+const reorderListingMedia = `-- name: ReorderListingMedia :execrows
+UPDATE listing_media m SET position = (x.ord - 1)::int
+FROM unnest($2::uuid[]) WITH ORDINALITY AS x(id, ord)
+WHERE m.id = x.id AND m.listing_id = $1
+`
+
+type ReorderListingMediaParams struct {
+	ListingID pgtype.UUID
+	MediaIds  []pgtype.UUID
+}
+
+// Sets position = index in media_ids, in one atomic statement.
+func (q *Queries) ReorderListingMedia(ctx context.Context, arg ReorderListingMediaParams) (int64, error) {
+	result, err := q.db.Exec(ctx, reorderListingMedia, arg.ListingID, arg.MediaIds)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const updateListing = `-- name: UpdateListing :one
 UPDATE listings SET
   slug = $2, title = $3, description = $4, listing_type = $5, property_type = $6, status = $7,
   price = $8, bedrooms = $9, bathrooms = $10, area = $11, city = $12, locality = $13,
   address = $14, featured = $15, updated_at = now()
-WHERE id = $1
-RETURNING id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, created_at, updated_at
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, deleted_at, created_at, updated_at
 `
 
 type UpdateListingParams struct {
@@ -743,8 +819,42 @@ func (q *Queries) UpdateListing(ctx context.Context, arg UpdateListingParams) (L
 		&i.Locality,
 		&i.Address,
 		&i.Featured,
+		&i.DeletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateListingMediaPath = `-- name: UpdateListingMediaPath :one
+UPDATE listing_media SET path = $3, media_type = $4
+WHERE id = $1 AND listing_id = $2
+RETURNING id, listing_id, path, media_type, position, created_at
+`
+
+type UpdateListingMediaPathParams struct {
+	ID        pgtype.UUID
+	ListingID pgtype.UUID
+	Path      string
+	MediaType string
+}
+
+// Replace a file in place: same id and position, new path.
+func (q *Queries) UpdateListingMediaPath(ctx context.Context, arg UpdateListingMediaPathParams) (ListingMedia, error) {
+	row := q.db.QueryRow(ctx, updateListingMediaPath,
+		arg.ID,
+		arg.ListingID,
+		arg.Path,
+		arg.MediaType,
+	)
+	var i ListingMedia
+	err := row.Scan(
+		&i.ID,
+		&i.ListingID,
+		&i.Path,
+		&i.MediaType,
+		&i.Position,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -781,7 +891,7 @@ ON CONFLICT (slug) DO UPDATE SET
   bathrooms = EXCLUDED.bathrooms, area = EXCLUDED.area, city = EXCLUDED.city,
   locality = EXCLUDED.locality, address = EXCLUDED.address, featured = EXCLUDED.featured,
   updated_at = now()
-RETURNING id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, created_at, updated_at
+RETURNING id, slug, title, description, listing_type, property_type, status, price, bedrooms, bathrooms, area, city, locality, address, featured, deleted_at, created_at, updated_at
 `
 
 type UpsertListingBySlugParams struct {
@@ -836,6 +946,7 @@ func (q *Queries) UpsertListingBySlug(ctx context.Context, arg UpsertListingBySl
 		&i.Locality,
 		&i.Address,
 		&i.Featured,
+		&i.DeletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

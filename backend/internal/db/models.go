@@ -8,6 +8,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Inquiry struct {
+	ID        pgtype.UUID
+	ListingID pgtype.UUID
+	Name      string
+	Phone     string
+	Email     string
+	Message   string
+	Source    string
+	Status    string
+	AdminNote string
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}
+
 type Listing struct {
 	ID           pgtype.UUID
 	Slug         string
@@ -24,6 +38,7 @@ type Listing struct {
 	Locality     string
 	Address      string
 	Featured     bool
+	DeletedAt    pgtype.Timestamptz
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 }
@@ -49,6 +64,7 @@ type SalesmanProfile struct {
 	CountryCode       string
 	Currency          string
 	AreaUnit          string
+	AdminEmail        string
 	AdminPasswordHash string
 	CreatedAt         pgtype.Timestamptz
 	UpdatedAt         pgtype.Timestamptz

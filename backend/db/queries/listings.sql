@@ -1,11 +1,11 @@
 -- ---------- listings ----------
 
--- Public catalog: only status = 'active'. Optional filters are NULL to skip.
+-- Public catalog: only status = 'active' and not soft-deleted. Optional filters are NULL to skip.
 -- q is matched with ILIKE; the caller escapes % _ \ in it.
 -- sort: 'price_asc' | 'price_desc' | anything else = newest first.
 -- name: ListActiveListings :many
 SELECT * FROM listings
-WHERE status = 'active'
+WHERE status = 'active' AND deleted_at IS NULL
   AND (sqlc.narg('listing_type')::text  IS NULL OR listing_type  = sqlc.narg('listing_type'))
   AND (sqlc.narg('property_type')::text IS NULL OR property_type = sqlc.narg('property_type'))
   AND (sqlc.narg('city')::text          IS NULL OR lower(city)     = lower(sqlc.narg('city')))
@@ -26,7 +26,7 @@ LIMIT sqlc.arg('limit')::bigint OFFSET sqlc.arg('offset')::bigint;
 
 -- name: CountActiveListings :one
 SELECT count(*) FROM listings
-WHERE status = 'active'
+WHERE status = 'active' AND deleted_at IS NULL
   AND (sqlc.narg('listing_type')::text  IS NULL OR listing_type  = sqlc.narg('listing_type'))
   AND (sqlc.narg('property_type')::text IS NULL OR property_type = sqlc.narg('property_type'))
   AND (sqlc.narg('city')::text          IS NULL OR lower(city)     = lower(sqlc.narg('city')))
@@ -42,53 +42,59 @@ WHERE status = 'active'
 
 -- name: ListFeaturedListings :many
 SELECT * FROM listings
-WHERE status = 'active' AND featured
+WHERE status = 'active' AND deleted_at IS NULL AND featured
 ORDER BY created_at DESC, id
 LIMIT sqlc.arg('limit')::bigint;
 
 -- name: GetActiveListingBySlug :one
-SELECT * FROM listings WHERE slug = $1 AND status = 'active';
+SELECT * FROM listings WHERE slug = $1 AND status = 'active' AND deleted_at IS NULL;
 
--- ---------- facets (active listings only) ----------
+-- ---------- facets (active, non-deleted listings only) ----------
 
 -- name: FacetPurposes :many
 SELECT listing_type, count(*) AS count, min(price)::bigint AS min_price, max(price)::bigint AS max_price
-FROM listings WHERE status = 'active'
+FROM listings WHERE status = 'active' AND deleted_at IS NULL
 GROUP BY listing_type ORDER BY listing_type;
 
 -- name: FacetPropertyTypes :many
 SELECT property_type, count(*) AS count
-FROM listings WHERE status = 'active'
+FROM listings WHERE status = 'active' AND deleted_at IS NULL
 GROUP BY property_type ORDER BY property_type;
 
 -- name: FacetCities :many
 SELECT city, count(*) AS count
-FROM listings WHERE status = 'active'
+FROM listings WHERE status = 'active' AND deleted_at IS NULL
 GROUP BY city ORDER BY city;
 
 -- name: FacetLocalities :many
 SELECT city, locality, count(*) AS count
-FROM listings WHERE status = 'active' AND locality <> ''
+FROM listings WHERE status = 'active' AND deleted_at IS NULL AND locality <> ''
 GROUP BY city, locality ORDER BY city, locality;
 
 -- name: FacetBedrooms :many
 SELECT bedrooms::bigint AS bedrooms, count(*) AS count
-FROM listings WHERE status = 'active' AND bedrooms IS NOT NULL
+FROM listings WHERE status = 'active' AND deleted_at IS NULL AND bedrooms IS NOT NULL
 GROUP BY bedrooms ORDER BY bedrooms;
 
--- Admin: every status, optional status filter.
+-- Admin: every status except soft-deleted, optional status filter.
 -- name: ListListings :many
 SELECT * FROM listings
-WHERE (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status'))
-ORDER BY created_at DESC
-LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
+WHERE deleted_at IS NULL
+  AND (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status'))
+ORDER BY created_at DESC, id
+LIMIT sqlc.arg('limit')::bigint OFFSET sqlc.arg('offset')::bigint;
 
 -- name: CountListings :one
 SELECT count(*) FROM listings
-WHERE (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status'));
+WHERE deleted_at IS NULL
+  AND (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status'));
 
 -- name: GetListing :one
-SELECT * FROM listings WHERE id = $1;
+SELECT * FROM listings WHERE id = $1 AND deleted_at IS NULL;
+
+-- Includes soft-deleted rows: their slugs stay reserved by the UNIQUE constraint.
+-- name: ListingSlugExists :one
+SELECT EXISTS (SELECT 1 FROM listings WHERE slug = $1);
 
 -- name: CreateListing :one
 INSERT INTO listings (
@@ -104,7 +110,7 @@ UPDATE listings SET
   slug = $2, title = $3, description = $4, listing_type = $5, property_type = $6, status = $7,
   price = $8, bedrooms = $9, bathrooms = $10, area = $11, city = $12, locality = $13,
   address = $14, featured = $15, updated_at = now()
-WHERE id = $1
+WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;
 
 -- Seed only: idempotent by slug.
@@ -124,8 +130,10 @@ ON CONFLICT (slug) DO UPDATE SET
   updated_at = now()
 RETURNING *;
 
+-- Soft delete. Media rows and files are kept.
 -- name: DeleteListing :execrows
-DELETE FROM listings WHERE id = $1;
+UPDATE listings SET deleted_at = now(), updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL;
 
 -- ---------- listing_media ----------
 
@@ -138,13 +146,31 @@ SELECT * FROM listing_media
 WHERE listing_id = ANY(sqlc.arg('listing_ids')::uuid[])
 ORDER BY listing_id, position, created_at;
 
+-- name: GetListingMedia :one
+SELECT * FROM listing_media WHERE id = $1 AND listing_id = $2;
+
+-- name: NextListingMediaPosition :one
+SELECT COALESCE(max(position) + 1, 0)::int AS position FROM listing_media WHERE listing_id = $1;
+
 -- name: CreateListingMedia :one
 INSERT INTO listing_media (listing_id, path, media_type, position)
 VALUES ($1, $2, $3, $4)
 RETURNING *;
 
+-- Replace a file in place: same id and position, new path.
+-- name: UpdateListingMediaPath :one
+UPDATE listing_media SET path = $3, media_type = $4
+WHERE id = $1 AND listing_id = $2
+RETURNING *;
+
 -- name: UpdateListingMediaPosition :execrows
 UPDATE listing_media SET position = $3 WHERE id = $1 AND listing_id = $2;
+
+-- Sets position = index in media_ids, in one atomic statement.
+-- name: ReorderListingMedia :execrows
+UPDATE listing_media m SET position = (x.ord - 1)::int
+FROM unnest(sqlc.arg('media_ids')::uuid[]) WITH ORDINALITY AS x(id, ord)
+WHERE m.id = x.id AND m.listing_id = sqlc.arg('listing_id');
 
 -- Returns the deleted row so the caller can remove the file from disk.
 -- name: DeleteListingMedia :one

@@ -3,9 +3,12 @@ SELECT * FROM salesman_profile WHERE id = 1;
 
 -- Seed only: inserts the singleton row if it is missing, never overwrites it.
 -- name: CreateProfileIfMissing :exec
-INSERT INTO salesman_profile (id, name, phone, whatsapp_number, email, bio, service_areas, admin_password_hash)
-VALUES (1, $1, $2, $3, $4, $5, $6, $7)
+INSERT INTO salesman_profile (id, name, phone, whatsapp_number, email, bio, service_areas, admin_email, admin_password_hash)
+VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8)
 ON CONFLICT (id) DO NOTHING;
+
+-- name: GetAdminCredentials :one
+SELECT admin_email, admin_password_hash FROM salesman_profile WHERE id = 1;
 
 -- name: UpdateProfile :one
 UPDATE salesman_profile

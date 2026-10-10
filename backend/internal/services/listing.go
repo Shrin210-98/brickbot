@@ -95,7 +95,7 @@ func (s *ListingService) List(ctx context.Context, f ListingFilter, page, pageSi
 		return nil, 0, fmt.Errorf("list listings: %w", err)
 	}
 
-	items, err := s.withMedia(ctx, rows)
+	items, err := withMedia(ctx, s.q, rows)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -108,7 +108,7 @@ func (s *ListingService) Featured(ctx context.Context) ([]ListingWithMedia, erro
 	if err != nil {
 		return nil, fmt.Errorf("list featured listings: %w", err)
 	}
-	return s.withMedia(ctx, rows)
+	return withMedia(ctx, s.q, rows)
 }
 
 // GetBySlug returns one active listing with its media, or ErrNotFound.
@@ -153,7 +153,7 @@ func (s *ListingService) Facets(ctx context.Context) (Facets, error) {
 }
 
 // withMedia attaches media to rows with one batch query.
-func (s *ListingService) withMedia(ctx context.Context, rows []db.Listing) ([]ListingWithMedia, error) {
+func withMedia(ctx context.Context, q *db.Queries, rows []db.Listing) ([]ListingWithMedia, error) {
 	out := make([]ListingWithMedia, len(rows))
 	if len(rows) == 0 {
 		return out, nil
@@ -162,7 +162,7 @@ func (s *ListingService) withMedia(ctx context.Context, rows []db.Listing) ([]Li
 	for i, l := range rows {
 		ids[i] = l.ID
 	}
-	media, err := s.q.ListMediaForListings(ctx, ids)
+	media, err := q.ListMediaForListings(ctx, ids)
 	if err != nil {
 		return nil, fmt.Errorf("list media for listings: %w", err)
 	}
