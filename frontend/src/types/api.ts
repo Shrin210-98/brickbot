@@ -83,6 +83,21 @@ export interface ListingFacets {
   bedrooms: ValueCount<number>[]
 }
 
+export interface Testimonial {
+  id: string
+  author_name: string
+  author_title: string | null
+  author_photo_url: string | null
+  quote: string
+  rating: number | null
+  listing_slug: string | null
+  created_at: string
+}
+
+export interface Testimonials {
+  items: Testimonial[]
+}
+
 // POST /api/inquiries body. Empty strings are allowed; the API trims them.
 export interface InquiryCreate {
   name: string
