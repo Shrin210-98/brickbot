@@ -9,18 +9,9 @@ import type { ListingSummary } from '@/types/api'
 
 const PLACEHOLDERS = Object.values(images.listings)
 
-// 32-bit FNV-1a. Only needs to be stable, so the same listing always gets the
-// same placeholder photo.
-function hash(s: string): number {
-  let h = 0x811c9dc5
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i)
-    h = Math.imul(h, 0x01000193)
-  }
-  return h >>> 0
-}
-
-export function ListingCard({ listing }: { listing: ListingSummary }) {
+// index is the card's position in the rendered list. Picking the placeholder by
+// position keeps neighbouring cards from sharing a photo.
+export function ListingCard({ listing, index }: { listing: ListingSummary; index: number }) {
   const market = useMarket()
   const place = [listing.locality, listing.city].filter(Boolean).join(', ')
 
@@ -32,7 +23,7 @@ export function ListingCard({ listing }: { listing: ListingSummary }) {
       <Card className="h-full gap-0 overflow-hidden py-0 transition-shadow group-hover:shadow-md">
         <div className="relative aspect-[4/3] bg-muted">
           <img
-            src={listing.cover_url ?? PLACEHOLDERS[hash(listing.slug) % PLACEHOLDERS.length]}
+            src={listing.cover_url ?? PLACEHOLDERS[index % PLACEHOLDERS.length]}
             alt=""
             loading="lazy"
             className="size-full object-cover"
