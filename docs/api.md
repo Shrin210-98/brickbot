@@ -56,19 +56,35 @@ Liveness. `200 {"status":"ok"}`. Static response; the API refuses to start if th
 `200`:
 ```json
 {
-  "name": "Ravi Kumar",
-  "bio": "Residential and commercial property in western Mumbai.",
+  "id": 1,
+  "full_name": "Ravi Sharma",
+  "agency_name": "BrickBot",
+  "tagline": "Your neighbour in Mumbai real estate",
+  "headline": "Family homes, first-time buyers and society resales in Bandra and Khar.",
+  "bio": "I've helped Mumbai families buy, sell and rent homes for over a decade…",
   "photo_url": "/media/profile/ravi.jpg",
+  "phone": "+919876543210",
   "whatsapp_number": "919876543210",
-  "service_areas": ["Andheri West", "Bandra"],
-  "contact": {"phone": "+919876543210", "email": "ravi@example.com"},
+  "email": "ravi@example.com",
+  "service_areas": ["Bandra West", "Khar"],
+  "license_no": "A51900012345",
+  "socials": {"instagram": "https://instagram.com/…"},
+  "years_experience": 12,
+  "deals_closed": 340,
+  "specialties": ["First-time buyers", "Society resales"],
+  "process_steps": [{"title": "Understand", "description": "…"}],
   "country_code": "IN",
   "currency": "INR",
   "area_unit": "sqft",
   "chat_enabled": true
 }
 ```
-`chat_enabled` is `false` when `ANTHROPIC_API_KEY` is empty (the SPA then hides the chat launcher). `photo_url` may be `null`. `whatsapp_number` is digits only, ready for `https://wa.me/<whatsapp_number>`, and may be `""`. `404 not_found` until the profile is seeded.
+- `agency_name` is never empty: it falls back to `"BrickBot"` when the column is null or blank.
+- `tagline`, `headline`, `photo_url`, `license_no` (RERA number), `years_experience` and `deals_closed` may be `null`.
+- `service_areas` and `specialties` are always arrays, `process_steps` is always an array of `{title, description}`, and `socials` is always an object mapping network to URL. Each may be empty.
+- `chat_enabled` is `false` when `ANTHROPIC_API_KEY` is empty (the SPA then hides the chat launcher).
+- `whatsapp_number` is digits only, ready for `https://wa.me/<whatsapp_number>`, and may be `""`.
+- `404 not_found` until the profile is seeded.
 
 ### `GET /api/listings`
 | Param | Type | Notes |
@@ -310,7 +326,7 @@ Schema: `backend/db/schema.sql`. Queries: `backend/db/queries/` → `backend/int
 
 | Table | Queries |
 |---|---|
-| `salesman_profile` (singleton, `id = 1`) | `GetProfile`, `GetAdminCredentials`, `CreateProfileIfMissing` (seed), `UpdateProfile`, `UpdateAdminPasswordHash` |
+| `salesman_profile` (singleton, `id = 1`) | `GetProfile`, `GetAdminCredentials`, `CreateProfileIfMissing` (seed), `FillProfileMarketing` (seed, fills empty fields only), `UpdateProfile`, `UpdateAdminPasswordHash` |
 | `listings` (soft delete via `deleted_at`; every query filters it) | Public (`status = 'active'` only): `ListActiveListings`, `CountActiveListings`, `ListFeaturedListings`, `GetActiveListingBySlug`, `FacetPurposes`, `FacetPropertyTypes`, `FacetCities`, `FacetLocalities`, `FacetBedrooms`. Admin: `ListListings`, `CountListings`, `GetListing`, `ListingSlugExists`, `CreateListing`, `UpdateListing`, `DeleteListing` (soft). Seed: `UpsertListingBySlug` |
 | `listing_media` | `ListListingMedia`, `ListMediaForListings` (batch), `GetListingMedia`, `NextListingMediaPosition`, `CreateListingMedia`, `UpdateListingMediaPath`, `UpdateListingMediaPosition`, `ReorderListingMedia`, `DeleteListingMedia` |
 | `inquiries` (`chat_session_id` set for `source = 'chat'`, unique when set) | `CreateInquiry`, `ListInquiries`, `CountInquiries`, `GetInquiry`, `UpdateInquiry` |

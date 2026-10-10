@@ -24,8 +24,8 @@ TanStack Query, react-router-dom v6, react-hook-form + zod, Vitest.
 - `src/lib/api.ts`: fetch wrapper (`credentials: 'include'`, throws `ApiError{status, code, fields}`).
 - `src/lib/sse.ts`: POST stream parser. `src/lib/whatsapp.ts`: wa.me link builder. `src/lib/format.ts`: price/area.
 - `src/api/*`: TanStack Query hooks. **All server state goes through these. No `fetch` inside components.**
-- `src/layouts/`: `PublicLayout` (contains the WhatsApp button and chat launcher) and `AdminLayout` (auth guard via `/api/auth/me`).
-- `src/pages/`, `src/components/{listings,inquiry,chat,admin,whatsapp}/`, `src/components/ui/` (shadcn, generated).
+- `src/layouts/`: `PublicLayout` (Header, Footer, the WhatsApp button and chat launcher) and `AdminLayout` (auth guard via `/api/auth/me`).
+- `src/pages/`, `src/components/{layout,listings,inquiry,chat,admin,whatsapp}/`, `src/components/ui/` (shadcn, generated).
 
 ## Forms
 - `useForm<z.input<S>, unknown, z.output<S>>({ resolver: zodResolver(S) })`, so submit handlers get trimmed values.

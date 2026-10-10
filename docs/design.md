@@ -20,14 +20,18 @@ Tokens live in `frontend/src/index.css` (`:root`) as `hsl(...)` values, and Tail
 | `--secondary` | 36 30% 91% | #EFE9DF | Soft section bands, secondary buttons |
 | `--muted` | 36 20% 86% | #E8E2D6 | Placeholders, skeletons, quiet fills |
 | `--muted-foreground` | 0 0% 42% | #6B6B6B | Secondary text |
-| `--accent` | 14 50% 36% | #8B4A2F | Darker terracotta: hover and emphasis |
+| `--primary-strong` | 14 50% 36% | #8B4A2F | Darker terracotta for emphasis (`text-primary-strong`, `bg-primary-strong`) |
+| `--accent` | 36 30% 91% | #EFE9DF | Same as secondary: shadcn's menu/select hover and open states |
 | `--border` | 36 25% 85% | #E5DDD0 | Borders, inputs, dividers |
 | `--ring` | 14 54% 54% | #C96F4A | Focus ring |
 | `--radius` | 0.5rem | | Base radius |
 
-These tokens were derived to fit with the rest: `--card`/`--popover` are a near-white warm `36 40% 99%`, `--input` = `--border`, `--accent-foreground` is white, and `--destructive` is a red `0 72% 45%`.
+These tokens were derived to fit with the rest: `--card`/`--popover` are a near-white warm `36 40% 99%`, `--input` = `--border`, `--accent-foreground` = `--foreground`, and `--destructive` is a red `0 72% 45%`.
 
-shadcn uses `accent` as the **hover background** of ghost and outline buttons, menu items and select options. With a dark terracotta accent and white text, those hovers are strong by design.
+**Terracotta is reserved** for primary buttons, active and selected states, focus rings, links and eyebrow labels. Hovers stay neutral:
+- Menu, select and dropdown items hover on `--accent`, which is set to the secondary beige.
+- Ghost and outline buttons hover on `--muted`, a slightly deeper beige. The generated `button.tsx` sets this, and it stays unedited.
+- Custom links hover to `text-primary`. Custom list rows hover to `bg-secondary`.
 
 ## Typography
 Loaded from Google Fonts with a `<link>` in `frontend/index.html` (no npm font packages).
@@ -53,6 +57,12 @@ Base scale, set on bare elements in `@layer base`. Utility classes override it.
 - Section rhythm: `py-20 md:py-28` for full-width sections. Alternate `bg-background` and `bg-secondary` bands to separate them.
 - Cards: `rounded-lg border`, no resting shadow, `hover:shadow-md` with `transition-shadow`.
 - Buttons: `rounded-md` with generous padding (`h-11 px-6` for primary calls to action). Use primary (terracotta) for the one main action in a section and outline or ghost for the rest.
+
+## Layout
+- `components/layout/Header.tsx`: a sticky header, transparent at the top of Home and solid (`bg-background/95 border-b`) after 16px of scroll and on every other route. A Sheet holds the menu below `md`.
+- `components/layout/Footer.tsx`: three columns (brand, nav, contact) on `md+`, with a bottom bar `© year agency · RERA no`.
+- `components/layout/nav.ts`: the links both of them use. Section links are `/#anchor`, and HomePage scrolls to the hash on every navigation. `html` has `scroll-smooth scroll-pt-16`, so anchors clear the header.
+- Home sections in order: `#hero`, `#about`, `#listings`, `#testimonials`, `#contact`. Only Home is full-bleed. Other public pages sit in the `max-w-6xl` column from `PublicLayout`.
 
 ## Component conventions
 - Style with Tailwind and the tokens only. Never hard-code hex values in components. The one exception is WhatsApp green (`#25D366`) on WhatsApp buttons.
