@@ -28,7 +28,7 @@ export function ListingCard({ listing }: { listing: ListingSummary }) {
         </div>
         <CardContent className="flex flex-col gap-2 p-4">
           <p className="text-lg font-semibold">{formatPrice(listing.price, listing.purpose, market)}</p>
-          <h3 className="line-clamp-1 font-medium">{listing.title}</h3>
+          <h3 className="line-clamp-1 text-base font-medium">{listing.title}</h3>
           {place && (
             <p className="flex items-center gap-1 text-sm text-muted-foreground">
               <MapPin className="size-4 shrink-0" />
