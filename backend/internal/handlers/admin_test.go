@@ -39,6 +39,7 @@ type env struct {
 	t         *testing.T
 	h         http.Handler
 	q         *db.Queries
+	pool      *pgxpool.Pool
 	uploadDir string
 }
 
@@ -62,7 +63,7 @@ func newEnvWithChat(t *testing.T, anthropicURL string) *env {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	if _, err := pool.Exec(ctx, "TRUNCATE inquiries, chat_messages, chat_sessions, listing_media, listings, salesman_profile"); err != nil {
+	if _, err := pool.Exec(ctx, "TRUNCATE testimonials, inquiries, chat_messages, chat_sessions, listing_media, listings, salesman_profile"); err != nil {
 		t.Fatal(err)
 	}
 	hash, _ := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.MinCost)
@@ -92,8 +93,9 @@ func newEnvWithChat(t *testing.T, anthropicURL string) *env {
 		AdminListings: handlers.NewAdminListingsHandler(services.NewAdminListingService(q), services.NewMediaService(q, uploadDir)),
 		Media:         handlers.NewMediaHandler(uploadDir),
 		Chat:          handlers.NewChatHandler(chatSvc),
+		Testimonials:  handlers.NewTestimonialsHandler(services.NewTestimonialService(q)),
 	}, server.Security{AppOrigin: appOrigin, Sessions: sessions, Checker: authSvc})
-	return &env{t: t, h: h, q: q, uploadDir: uploadDir}
+	return &env{t: t, h: h, q: q, pool: pool, uploadDir: uploadDir}
 }
 
 type req struct {
