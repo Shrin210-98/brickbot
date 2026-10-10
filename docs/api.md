@@ -31,7 +31,7 @@ Base path: `/api`. JSON in and out, `snake_case` field names. Updated whenever a
 
 **Origin check:** `POST`/`PUT`/`PATCH`/`DELETE` with an `Origin` header other than `APP_ORIGIN` (default `http://localhost:5173`) → `403 forbidden`. Requests without `Origin` pass.
 
-**Rate limits** (in memory, per client IP; `X-Forwarded-For` last hop only when `TRUST_PROXY=true`): `POST /api/inquiries` 5/min, `POST /api/auth/login` 5 per 15 min, each with a burst of 5. Over the limit → `429 rate_limited` with `Retry-After` (seconds).
+**Rate limits** (in memory, per client IP; `X-Forwarded-For` last hop only when `TRUST_PROXY=true`): `POST /api/inquiries` 5/min, `POST /api/auth/login` 5 per 15 min, `POST /api/chat/sessions/{id}/messages` 10/min, each with a burst of 5. Over the limit → `429 rate_limited` with `Retry-After` (seconds).
 
 ## Public
 
@@ -63,10 +63,11 @@ Liveness. `200 {"status":"ok"}`. Static response; the API refuses to start if th
   "contact": {"phone": "+919876543210", "email": "ravi@example.com"},
   "country_code": "IN",
   "currency": "INR",
-  "area_unit": "sqft"
+  "area_unit": "sqft",
+  "chat_enabled": true
 }
 ```
-`photo_url` may be `null`. `whatsapp_number` is digits only, ready for `https://wa.me/<whatsapp_number>`, and may be `""`. `404 not_found` until the profile is seeded.
+`chat_enabled` is `false` when `ANTHROPIC_API_KEY` is empty (the SPA then hides the chat launcher). `photo_url` may be `null`. `whatsapp_number` is digits only, ready for `https://wa.me/<whatsapp_number>`, and may be `""`. `404 not_found` until the profile is seeded.
 
 ### `GET /api/listings`
 | Param | Type | Notes |
@@ -145,6 +146,35 @@ Strings are trimmed. Neither `phone` nor `email` → `422` with both in `fields`
 
 ### `GET /media/{path...}`
 Serves files from `UPLOAD_DIR`. Directories, hidden files and missing files → `404 not_found` (JSON envelope). `Cache-Control: public, max-age=86400`, `X-Content-Type-Options: nosniff`. Listing images live at `/media/listings/<listing id>/<random uuid>.<jpg|png|webp>`.
+
+## Chat
+
+The visitor chatbot. Design, tools, history rules and the SSE event contract are in `docs/chatbot.md`. Every chat route answers `503 unavailable` while the chatbot is disabled (`ANTHROPIC_API_KEY` empty).
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| POST | `/api/chat/sessions` | — | Start a conversation |
+| GET | `/api/chat/sessions/{id}/messages` | `visitor_id` | Visitor transcript |
+| POST | `/api/chat/sessions/{id}/messages` | `visitor_id` (rate-limited) | Send a message; reply streams as SSE |
+
+`visitor_id` is a UUID the browser generates once and keeps. A session belongs to the `visitor_id` that created it; any other or missing `visitor_id`, or an unknown session → `404 not_found`, so a session id reveals nothing.
+
+### `POST /api/chat/sessions`
+`{"visitor_id": "…"}` (required, UUID). `201 {"id": "…", "created_at": "…"}`. Also `400`, `403`, `422`, `503`.
+
+### `GET /api/chat/sessions/{id}/messages?visitor_id=…`
+`200`:
+```json
+{"items": [
+  {"id": 1, "role": "user", "text": "Any 2 BHK in Bandra?", "created_at": "…"},
+  {"id": 4, "role": "assistant", "text": "I found two…", "created_at": "…"}
+]}
+```
+Oldest first. Holds only visitor messages and the assistant's text; tool calls, tool results and listing cards are not replayed. `id`s increase but are not contiguous. Also `404`, `503`.
+
+### `POST /api/chat/sessions/{id}/messages`
+`{"visitor_id": "…", "content": "…"}`: `visitor_id` required UUID; `content` required, trimmed, ≤2000.
+Before the stream starts, failures are JSON errors: `400`, `403`, `404`, `409` (a reply is already streaming for this session), `413`, `422`, `429`, `503`. Otherwise `200` with `Content-Type: text/event-stream`: events `delta`, `tool`, `listings`, `lead_created`, then exactly one `done` or `error` (contract in `docs/chatbot.md` → SSE contract).
 
 ## Auth
 
@@ -251,7 +281,7 @@ Deletes the row and the file. `204`, or `404`.
   "created_at": "…", "updated_at": "…"
 }
 ```
-`listing` is `null` for a general inquiry. `source` is `form` (later also `chat`).
+`listing` is `null` for a general inquiry. `source` is `form` (inquiry form) or `chat` (recorded by the chatbot after the visitor consented, at most one per chat session).
 
 ### `GET /api/admin/inquiries/{id}`
 `200` one inquiry, or `404`.
@@ -269,4 +299,6 @@ Schema: `backend/db/schema.sql`. Queries: `backend/db/queries/` → `backend/int
 | `salesman_profile` (singleton, `id = 1`) | `GetProfile`, `GetAdminCredentials`, `CreateProfileIfMissing` (seed), `UpdateProfile`, `UpdateAdminPasswordHash` |
 | `listings` (soft delete via `deleted_at`; every query filters it) | Public (`status = 'active'` only): `ListActiveListings`, `CountActiveListings`, `ListFeaturedListings`, `GetActiveListingBySlug`, `FacetPurposes`, `FacetPropertyTypes`, `FacetCities`, `FacetLocalities`, `FacetBedrooms`. Admin: `ListListings`, `CountListings`, `GetListing`, `ListingSlugExists`, `CreateListing`, `UpdateListing`, `DeleteListing` (soft). Seed: `UpsertListingBySlug` |
 | `listing_media` | `ListListingMedia`, `ListMediaForListings` (batch), `GetListingMedia`, `NextListingMediaPosition`, `CreateListingMedia`, `UpdateListingMediaPath`, `UpdateListingMediaPosition`, `ReorderListingMedia`, `DeleteListingMedia` |
-| `inquiries` | `CreateInquiry`, `ListInquiries`, `CountInquiries`, `GetInquiry`, `UpdateInquiry` |
+| `inquiries` (`chat_session_id` set for `source = 'chat'`, unique when set) | `CreateInquiry`, `ListInquiries`, `CountInquiries`, `GetInquiry`, `UpdateInquiry` |
+| `chat_sessions` | `CreateChatSession`, `GetChatSession` (by id and `visitor_id`) |
+| `chat_messages` (append-only; `content` is the raw Anthropic content-block array) | `CreateChatMessage`, `ListRecentChatMessages`, `ListChatMessages` |
