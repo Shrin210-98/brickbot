@@ -80,7 +80,7 @@ function Hero({ profile }: { profile: Profile | null }) {
   return (
     // The image and overlay are absolute against the section, so they bleed
     // to its edges while the content keeps Section's max-w-6xl wrapper.
-    <Section id="hero" className="relative isolate overflow-hidden pt-12 pb-24 md:pt-20 md:pb-0">
+    <Section id="hero" className="relative isolate overflow-hidden pt-12 md:pt-20">
       <img
         src={images.hero.home}
         alt=""
