@@ -41,13 +41,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.sessions.Issue(w, pwv)
-	w.WriteHeader(http.StatusNoContent)
+	httpx.NoContent(w)
 }
 
 // Logout handles POST /api/auth/logout. It always succeeds.
 func (h *AuthHandler) Logout(w http.ResponseWriter, _ *http.Request) {
 	h.sessions.Clear(w)
-	w.WriteHeader(http.StatusNoContent)
+	httpx.NoContent(w)
 }
 
 // Me handles GET /api/auth/me (behind RequireAdmin).

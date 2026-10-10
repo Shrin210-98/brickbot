@@ -133,7 +133,7 @@ func (h *AdminListingsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, r, err)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	httpx.NoContent(w)
 }
 
 // AddMedia handles POST /api/admin/listings/{id}/media (multipart, field "file").
@@ -190,7 +190,7 @@ func (h *AdminListingsHandler) DeleteMedia(w http.ResponseWriter, r *http.Reques
 		writeServiceError(w, r, err)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	httpx.NoContent(w)
 }
 
 // ReorderMedia handles PATCH /api/admin/listings/{id}/media/order.
@@ -211,7 +211,7 @@ func (h *AdminListingsHandler) ReorderMedia(w http.ResponseWriter, r *http.Reque
 		writeMediaError(w, r, err)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	httpx.NoContent(w)
 }
 
 func (in listingRequest) toInput() services.ListingInput {
