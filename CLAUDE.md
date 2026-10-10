@@ -83,3 +83,4 @@ The Makefile exports `HOST_UID`/`HOST_GID` so containers write files owned by yo
 - Body explains *why*, not just *what*.
 - If a change is knowingly incomplete, prefix with `wip(...)`.
 - Use `git add <explicit paths>` — never `git add -A` or `git add .`.
+- Do NOT add Co-Authored-By lines. The user is the sole author.
