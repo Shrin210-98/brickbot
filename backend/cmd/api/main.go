@@ -61,16 +61,21 @@ func main() {
 	listingSvc := services.NewListingService(q)
 	inquirySvc := services.NewInquiryService(q)
 
-	var chatSvc *chat.Service // nil: chatbot disabled, chat routes answer 503
+	// Without a key the chatbot runs in demo mode: scripted model output, real
+	// tools, history and leads.
+	var provider chat.Provider
 	if cfg.AnthropicKey != "" {
-		client := anthropic.NewClient(option.WithAPIKey(cfg.AnthropicKey))
-		chatSvc = chat.NewService(client, cfg.ChatModel, pool, profileSvc, listingSvc, inquirySvc)
+		provider = chat.NewAnthropicProvider(anthropic.NewClient(option.WithAPIKey(cfg.AnthropicKey)))
+		log.Info("chatbot", "mode", "live", "model", cfg.ChatModel)
+	} else {
+		provider = chat.NewEchoProvider()
+		log.Warn("chatbot running in demo mode: ANTHROPIC_API_KEY is not set, replies are scripted", "mode", "demo")
 	}
-	log.Info("chatbot", "enabled", chatSvc != nil, "model", cfg.ChatModel)
+	chatSvc := chat.NewService(provider, cfg.ChatModel, pool, profileSvc, listingSvc, inquirySvc)
 
 	sessions := auth.NewSessions(cfg.SessionSecret, cfg.CookieSecure)
 	handler := server.Routes(server.Handlers{
-		Profile:       handlers.NewProfileHandler(profileSvc, chatSvc != nil),
+		Profile:       handlers.NewProfileHandler(profileSvc, true),
 		Listings:      handlers.NewListingsHandler(listingSvc),
 		Auth:          handlers.NewAuthHandler(authSvc, sessions),
 		Inquiries:     handlers.NewInquiriesHandler(inquirySvc),

@@ -82,7 +82,7 @@ func newEnvWithChat(t *testing.T, anthropicURL string) *env {
 	var chatSvc *chat.Service
 	if anthropicURL != "" {
 		client := anthropic.NewClient(option.WithAPIKey("test-key"), option.WithBaseURL(anthropicURL), option.WithMaxRetries(0))
-		chatSvc = chat.NewService(client, "claude-haiku-5-5", pool, profileSvc, listingSvc, inquirySvc)
+		chatSvc = chat.NewService(chat.NewAnthropicProvider(client), "claude-haiku-5-5", pool, profileSvc, listingSvc, inquirySvc)
 	}
 	sessions := auth.NewSessions([]byte(strings.Repeat("t", 32)), false)
 	h := server.Routes(server.Handlers{

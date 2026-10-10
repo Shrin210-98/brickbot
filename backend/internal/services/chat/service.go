@@ -31,9 +31,10 @@ type Sink interface {
 	LeadCreated(inquiryID pgtype.UUID)
 }
 
-// Service is the chatbot. It exists only when ANTHROPIC_API_KEY is set.
+// Service is the chatbot. Its Provider is the Anthropic API, or the scripted
+// EchoProvider in demo mode.
 type Service struct {
-	client    anthropic.Client
+	provider  Provider
 	model     string
 	pool      *pgxpool.Pool
 	q         *db.Queries
@@ -45,12 +46,12 @@ type Service struct {
 	active map[[16]byte]struct{} // sessions with a turn in progress
 }
 
-// NewService returns a chatbot that calls model through client.
-func NewService(client anthropic.Client, model string, pool *pgxpool.Pool,
+// NewService returns a chatbot that calls model through provider.
+func NewService(provider Provider, model string, pool *pgxpool.Pool,
 	profiles *services.ProfileService, listings *services.ListingService, inquiries *services.InquiryService,
 ) *Service {
 	return &Service{
-		client:    client,
+		provider:  provider,
 		model:     model,
 		pool:      pool,
 		q:         db.New(pool),
@@ -104,7 +105,7 @@ func (s *Service) Lock(ctx context.Context, id, visitorID pgtype.UUID) (unlock f
 
 // Reply stores the visitor's message, then runs the tool loop, streaming to
 // sink. Call it while holding Lock. Errors wrapping ErrUpstream come from the
-// Anthropic API.
+// model call.
 func (s *Service) Reply(ctx context.Context, id pgtype.UUID, text string, sink Sink) error {
 	if err := appendMessage(ctx, s.q, id, roleUser, []anthropic.ContentBlockParamUnion{anthropic.NewTextBlock(text)}); err != nil {
 		return err

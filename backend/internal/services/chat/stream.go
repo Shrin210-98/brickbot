@@ -32,7 +32,7 @@ func (s *Service) streamTurn(ctx context.Context, system string, msgs []anthropi
 		params.ToolChoice = anthropic.ToolChoiceUnionParam{OfNone: &anthropic.ToolChoiceNoneParam{}}
 	}
 
-	stream := s.client.Messages.NewStreaming(ctx, params)
+	stream := s.provider.Stream(ctx, params)
 	defer func() { _ = stream.Close() }() // stream.Err carries any read error
 	var msg anthropic.Message
 	for stream.Next() {
