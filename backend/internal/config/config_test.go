@@ -37,7 +37,7 @@ func TestLoad(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				if c.AppOrigin != "http://localhost:5173" || c.Port != "8080" {
+				if c.AppOrigin != "http://localhost:5173" || c.Port != "8080" || c.ChatModel != "claude-haiku-5-5" || c.AnthropicKey != "" {
 					t.Fatalf("defaults not applied: %+v", c)
 				}
 				return
@@ -46,5 +46,22 @@ func TestLoad(t *testing.T) {
 				t.Fatalf("err = %v, want mention of %s", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestLoadChat(t *testing.T) {
+	env := map[string]string{
+		"DATABASE_URL":      "postgres://x",
+		"SESSION_SECRET":    strings.Repeat("s", 32),
+		"UPLOAD_DIR":        "/data/uploads",
+		"ANTHROPIC_API_KEY": " sk-test ",
+		"ANTHROPIC_MODEL":   "claude-sonnet-5-5",
+	}
+	c, err := Load(func(k string) string { return env[k] })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.AnthropicKey != "sk-test" || c.ChatModel != "claude-sonnet-5-5" {
+		t.Fatalf("chat config = %q, %q", c.AnthropicKey, c.ChatModel)
 	}
 }
