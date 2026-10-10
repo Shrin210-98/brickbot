@@ -21,6 +21,7 @@ const (
 	CodeValidationFailed = "validation_failed"
 	CodeRateLimited      = "rate_limited"
 	CodeInternal         = "internal"
+	CodeUnavailable      = "unavailable"
 )
 
 // MaxJSONBody caps JSON request bodies.

@@ -22,7 +22,12 @@ type Config struct {
 	TrustProxy    bool   // trust the first X-Forwarded-For hop for client IPs
 	UploadDir     string // media root on disk, served at /media/
 	AppOrigin     string // the SPA's origin; non-GET requests from any other Origin get 403
+	AnthropicKey  string // empty disables the chatbot
+	ChatModel     string // ANTHROPIC_MODEL, see docs/chatbot.md
 }
+
+// defaultChatModel is Claude Haiku 5.5 (anthropic.ModelClaudeHaiku5_5).
+const defaultChatModel = "claude-haiku-5-5"
 
 // Load reads the config through getenv (os.Getenv in production).
 func Load(getenv func(string) string) (Config, error) {
@@ -32,6 +37,8 @@ func Load(getenv func(string) string) (Config, error) {
 		SessionSecret: []byte(getenv("SESSION_SECRET")),
 		UploadDir:     getenv("UPLOAD_DIR"),
 		AppOrigin:     strings.TrimRight(withDefault(getenv("APP_ORIGIN"), "http://localhost:5173"), "/"),
+		AnthropicKey:  strings.TrimSpace(getenv("ANTHROPIC_API_KEY")),
+		ChatModel:     withDefault(strings.TrimSpace(getenv("ANTHROPIC_MODEL")), defaultChatModel),
 	}
 	var errs []error
 	if c.DatabaseURL == "" {
