@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createChatSession } from '@/api/chat'
 import { ApiError } from '@/lib/api'
 import { streamSSE } from '@/lib/sse'
-import { createChat, getVisitorId } from '@/hooks/useChat'
+import { createChat, getVisitorId, hasMessages, saveSession } from '@/hooks/useChat'
 import type { ListingSummary } from '@/types/api'
 
 const VISITOR = '0b6c2f1e-6d7a-4c3b-9a51-2f6d8e4b7c10'
@@ -311,6 +311,44 @@ describe('createChat persistence', () => {
       ['user', 'hello?'],
       ['assistant', 'Back again'],
     ])
+  })
+})
+
+describe('clearing the conversation', () => {
+  it('reset() aborts a streaming reply, clears messages, forgets the saved session and goes idle', async () => {
+    const store = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    })
+    const { stream, signals } = mockChatApi()
+    const chat = createChat({ visitorId: VISITOR, createSession: createChatSession, onSession: saveSession })
+    const sent = chat.send('hi')
+    const s = await stream()
+    s.emit('delta', { text: 'Half a' })
+    await vi.waitFor(() => expect(chat.getState().messages.at(-1)?.text).toBe('Half a'))
+    expect(store.get('brickbot.chat_session')).toBe('s-1')
+
+    chat.reset()
+    expect(signals[0]?.aborted).toBe(true)
+    expect(store.has('brickbot.chat_session')).toBe(false)
+    expect(chat.getState()).toEqual({ messages: [], status: 'idle', error: null, restoring: false })
+    await sent
+    // Nothing from the aborted stream lands afterwards.
+    expect(chat.getState().messages).toEqual([])
+  })
+
+  it('hasMessages is false when fresh, true after send, false after reset', async () => {
+    const { chat, stream } = mockChatApi()
+    expect(hasMessages(chat.getState())).toBe(false)
+    const sent = chat.send('hi')
+    expect(hasMessages(chat.getState())).toBe(true)
+    ;(await stream()).finish()
+    await sent
+    expect(hasMessages(chat.getState())).toBe(true)
+    chat.reset()
+    expect(hasMessages(chat.getState())).toBe(false)
   })
 })
 

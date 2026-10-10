@@ -24,6 +24,7 @@ export interface ChatState {
 }
 
 export interface UseChat extends ChatState {
+  hasMessages: boolean // there is a conversation to clear
   send: (text: string) => Promise<void>
   abort: () => void
   retry: () => Promise<void>
@@ -65,7 +66,7 @@ function readSavedSession(): string | null {
 }
 
 // Saves the conversation's session id, or forgets it when id is null.
-function saveSession(id: string | null) {
+export function saveSession(id: string | null) {
   try {
     if (id) localStorage.setItem(SESSION_KEY, id)
     else localStorage.removeItem(SESSION_KEY)
@@ -111,6 +112,10 @@ export interface Chat {
 }
 
 const INITIAL: ChatState = { messages: [], status: 'idle', error: null, restoring: false }
+
+export function hasMessages(state: ChatState): boolean {
+  return state.messages.length > 0
+}
 
 function errorMessage(err: unknown): string {
   if (err instanceof ApiError) return err.message
@@ -294,5 +299,12 @@ export function useChat(): UseChat {
     else if (transcript.error) chat.dropRestore(isNotFound(transcript.error))
   }, [chat, transcript.data, transcript.error])
 
-  return { ...state, send: chat.send, abort: chat.abort, retry: chat.retry, reset: chat.reset }
+  return {
+    ...state,
+    hasMessages: hasMessages(state),
+    send: chat.send,
+    abort: chat.abort,
+    retry: chat.retry,
+    reset: chat.reset,
+  }
 }
