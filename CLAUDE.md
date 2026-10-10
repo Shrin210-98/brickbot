@@ -89,3 +89,21 @@ The Makefile exports `HOST_UID`/`HOST_GID` so containers write files owned by yo
 - Stay inside the project root. Do not read from `~/.claude/` or any
   path outside `/home/aidev/All Files/brickbot/`.
 - If you need information from outside, ask.
+
+## Command style
+- Prefer single-purpose commands with absolute paths over compound commands
+  (`cd X && cmd1 && cmd2`).
+- Use the Read tool for reading files. If you must shell out, use
+  `cat /absolute/path/file`.
+- Do NOT read files outside the project root. If you need information from
+  outside, ask.
+
+## Never (in auto mode)
+- Never read `.env`, `.env.*`, `*.key`, `*.pem`, `~/.ssh/*`, `~/.aws/*`.
+- Never run `sudo`, `su`, or any command that needs elevated privileges.
+- Never run `docker compose down -v` or `docker compose exec <svc> rm`.
+- Never run `git push`, `git push --force`, or `git reset --hard`.
+- Never modify the Makefile or `docker-compose.yml` without stopping first
+  to ask.
+- Never `git add -A` or `git add .` — always explicit paths.
+- Never run `make reset`.
