@@ -21,7 +21,7 @@ Base path: `/api`. JSON in and out, `snake_case` field names. Updated whenever a
 | 422 | `validation_failed` | Struct validation failed; see `fields` |
 | 429 | `rate_limited` | Rate limit exceeded |
 | 500 | `internal` | Unexpected server error |
-| 503 | `unavailable` | Chatbot disabled (no API key) |
+| 503 | `unavailable` | Chatbot unavailable. The shipped server never returns it: without an API key the chatbot runs in demo mode |
 
 **Pagination:** `?page=1&page_size=20` → `{"items": [...], "total": 0, "page": 1, "page_size": 20}`.
 
@@ -82,7 +82,7 @@ Liveness. `200 {"status":"ok"}`. Static response; the API refuses to start if th
 - `agency_name` is never empty: it falls back to `"BrickBot"` when the column is null or blank.
 - `tagline`, `headline`, `photo_url`, `license_no` (RERA number), `years_experience` and `deals_closed` may be `null`.
 - `service_areas` and `specialties` are always arrays, `process_steps` is always an array of `{title, description}`, and `socials` is always an object mapping network to URL. Each may be empty.
-- `chat_enabled` is `false` when `ANTHROPIC_API_KEY` is empty (the SPA then hides the chat launcher).
+- `chat_enabled` is always `true`. With `ANTHROPIC_API_KEY` empty the chatbot runs in demo mode with scripted replies (`docs/chatbot.md` → Demo mode). The SPA hides the chat launcher only when it is `false`.
 - `whatsapp_number` is digits only, ready for `https://wa.me/<whatsapp_number>`, and may be `""`.
 - `404 not_found` until the profile is seeded.
 
@@ -179,7 +179,7 @@ Serves files from `UPLOAD_DIR`. Directories, hidden files and missing files → 
 
 ## Chat
 
-The visitor chatbot. Design, tools, history rules and the SSE event contract are in `docs/chatbot.md`. Every chat route answers `503 unavailable` while the chatbot is disabled (`ANTHROPIC_API_KEY` empty).
+The visitor chatbot. Design, tools, history rules and the SSE event contract are in `docs/chatbot.md`. With `ANTHROPIC_API_KEY` empty the routes work the same, in demo mode: the model's text is scripted, while tools, history, leads and the SSE events are real (`docs/chatbot.md` → Demo mode).
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|

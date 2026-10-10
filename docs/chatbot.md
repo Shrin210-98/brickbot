@@ -11,7 +11,7 @@ the backend (`internal/services/chat`, `internal/handlers/chat.go`) and the fron
 |---|---|
 | SDK | `github.com/anthropics/anthropic-sdk-go` **v1.80.0** (pinned in `go.mod`) |
 | Model | `ANTHROPIC_MODEL`, default `claude-haiku-5-5` (`anthropic.ModelClaudeHaiku5_5`, Claude Haiku 5.5) |
-| API key | `ANTHROPIC_API_KEY`. Empty → chatbot disabled: chat routes return `503 unavailable`, `GET /api/profile` has `chat_enabled: false` |
+| API key | `ANTHROPIC_API_KEY`. Empty → **demo mode**: the server uses the echo provider instead of the API. Chat routes work and `GET /api/profile` has `chat_enabled: true`; only the model's text is scripted (see Demo mode) |
 | `max_tokens` | 4096 per model call |
 | Thinking | `{"type": "disabled"}` (Haiku 5.5 accepts this at effort `high` or below) |
 | Effort | `output_config.effort = "low"`, set explicitly (Haiku 5.5 defaults to `medium`) |
@@ -126,7 +126,26 @@ lock), and a second concurrent `POST …/messages` gets `409 conflict`.
 | POST | `/api/chat/sessions/{id}/messages` | Send a message, stream the reply (SSE) |
 
 Full request and response shapes are in `docs/api.md`. `POST …/messages` is rate-limited per client IP to
-**10 per minute (burst 5)**. All chat routes return `503 unavailable` while the chatbot is disabled.
+**10 per minute (burst 5)**. The chat routes are always on; without `ANTHROPIC_API_KEY` they run in demo mode.
+
+### Demo mode
+
+With `ANTHROPIC_API_KEY` empty, `chat.EchoProvider` replaces the Anthropic API and the api logs
+`chatbot running in demo mode`. It streams Anthropic-shaped SSE frames through the SDK's own decoder, so the
+tool loop, tools, history, consent check, lead writes and the SSE contract are the same as in live mode.
+Only the model's text is scripted, chosen from the last message:
+
+- a tool result → a short text summary of it, ending the turn
+- consent (`yes`, `share`, `contact me`, …) right after a reply that followed a tool result → `create_lead`
+  with `consent: true`, using the name, phone and email in the message, or placeholders if they're missing
+- `more`, `details`, or a listing slug → `get_listing` (the slug named, the ordinal picked from the last
+  search, or its first result)
+- search words (`find`, `show`, `flat`, `bhk`, `rent`, `under`, `in <place>`, …) → `search_listings`
+  with filters read from the message
+- otherwise → a greeting on the first message, or a short reply saying what demo mode can do
+
+With `tool_choice: none` it never calls a tool. The first assistant turn of a session starts with a line
+saying replies are scripted and live answers need an API key. There is no switch that turns chat off.
 
 ## SSE contract
 
