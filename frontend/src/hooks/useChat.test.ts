@@ -164,6 +164,7 @@ describe('createChat', () => {
     expect(chat.getState()).toEqual({
       status: 'error',
       error: 'The assistant is unavailable right now.',
+      restoring: false,
       messages: [
         { id: 1, role: 'user', text: 'hi' },
         { id: 2, role: 'assistant', text: 'Partial ans', pending: false },
@@ -194,6 +195,7 @@ describe('createChat', () => {
     expect(chat.getState()).toEqual({
       status: 'error',
       error: "Couldn't reach the server. Check your connection and try again.",
+      restoring: false,
       messages: [{ id: 1, role: 'user', text: 'hi' }],
     })
   })
@@ -208,7 +210,107 @@ describe('createChat', () => {
     chat.reset()
     expect(signals[0]?.aborted).toBe(true)
     await expect(sent).resolves.toBeUndefined()
-    expect(chat.getState()).toEqual({ messages: [], status: 'idle', error: null })
+    expect(chat.getState()).toEqual({ messages: [], status: 'idle', error: null, restoring: false })
+  })
+
+  it('abort() cancels only the reply in flight and keeps the conversation', async () => {
+    const { chat, stream, signals } = mockChatApi()
+    const first = chat.send('hi')
+    ;(await stream()).finish()
+    await first
+
+    const second = chat.send('show me flats')
+    const s = await stream(1)
+    s.emit('delta', { text: 'Let me' })
+    await vi.waitFor(() => expect(chat.getState().messages.at(-1)?.text).toBe('Let me'))
+    chat.abort()
+    expect(signals[1]?.aborted).toBe(true)
+    await second
+
+    expect(chat.getState()).toMatchObject({ status: 'idle', error: null })
+    // The first reply streamed nothing, so it was dropped when it settled.
+    expect(chat.getState().messages.map((m) => [m.role, m.text, m.pending])).toEqual([
+      ['user', 'hi', undefined],
+      ['user', 'show me flats', undefined],
+      ['assistant', 'Let me', false],
+    ])
+  })
+})
+
+describe('createChat persistence', () => {
+  it('reports a new session, and null on reset', async () => {
+    const onSession = vi.fn()
+    const { stream } = mockChatApi()
+    const chat = createChat({ visitorId: VISITOR, createSession: createChatSession, onSession })
+    const sent = chat.send('hi')
+    ;(await stream()).finish()
+    await sent
+    expect(onSession).toHaveBeenLastCalledWith('s-1')
+    chat.reset()
+    expect(onSession).toHaveBeenLastCalledWith(null)
+  })
+
+  it('restores the transcript above turns sent while it loaded, then reuses the session', async () => {
+    const { stream, fetchMock } = mockChatApi()
+    const chat = createChat({ visitorId: VISITOR, createSession: createChatSession, sessionId: 'saved-1' })
+    expect(chat.getState().restoring).toBe(true)
+
+    const sent = chat.send('new question')
+    ;(await stream()).finish()
+    await sent
+    chat.restore([
+      { id: 1, role: 'user', text: 'old question', created_at: '' },
+      { id: 4, role: 'assistant', text: 'old answer', created_at: '' },
+    ])
+
+    const state = chat.getState()
+    expect(state.restoring).toBe(false)
+    expect(state.messages.map((m) => [m.text, m.history ?? false])).toEqual([
+      ['old question', true],
+      ['old answer', true],
+      ['new question', false],
+    ])
+    expect(fetchMock.mock.calls.map(([u]) => u)).toEqual(['/api/chat/sessions/saved-1/messages'])
+  })
+
+  it('drops a session that is gone and starts a new one', async () => {
+    const onSession = vi.fn()
+    const { stream, fetchMock } = mockChatApi()
+    const chat = createChat({ visitorId: VISITOR, createSession: createChatSession, sessionId: 'gone-1', onSession })
+    chat.dropRestore(true)
+    expect(onSession).toHaveBeenCalledWith(null)
+    expect(chat.getState()).toMatchObject({ restoring: false, error: null })
+
+    const sent = chat.send('hi')
+    ;(await stream()).finish()
+    await sent
+    expect(fetchMock.mock.calls.map(([u]) => u)).toEqual(['/api/chat/sessions', '/api/chat/sessions/s-1/messages'])
+  })
+
+  it('retry() re-sends the last visitor message once', async () => {
+    let calls = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input, init) => {
+        if (String(input) === '/api/chat/sessions') return Response.json({ id: 's-1', created_at: '' }, { status: 201 })
+        calls++
+        if (calls === 1) throw new TypeError('Failed to fetch')
+        const s = sseResponse(init?.signal)
+        s.emit('delta', { text: 'Back again' })
+        s.finish()
+        return s.response
+      }),
+    )
+    const chat = createChat({ visitorId: VISITOR, createSession: createChatSession })
+    await chat.send('hello?')
+    expect(chat.getState().status).toBe('error')
+
+    await chat.retry()
+    expect(chat.getState()).toMatchObject({ status: 'idle', error: null })
+    expect(chat.getState().messages.map((m) => [m.role, m.text])).toEqual([
+      ['user', 'hello?'],
+      ['assistant', 'Back again'],
+    ])
   })
 })
 

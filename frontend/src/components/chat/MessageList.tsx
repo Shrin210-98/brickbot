@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react'
+import { Button } from '@/components/ui/button'
 import type { ChatMessage } from '@/hooks/useChat'
 import { ListingCards } from './ListingCards'
 import { MessageBubble } from './MessageBubble'
+
+const SUGGESTIONS = ['Flats in Bandra West', '2BHK under 3cr', 'Rentals in Khar']
 
 // Within this many pixels of the bottom counts as following the conversation.
 const STICK_PX = 80
@@ -9,11 +12,15 @@ const STICK_PX = 80
 export function MessageList({
   messages,
   streaming,
+  restoring,
   onNavigate,
+  onSuggest,
 }: {
   messages: ChatMessage[]
   streaming: boolean
+  restoring: boolean
   onNavigate: () => void
+  onSuggest: (text: string) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const following = useRef(true)
@@ -50,12 +57,29 @@ export function MessageList({
       className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-4 py-4 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none focus-visible:ring-inset"
     >
       {messages.length === 0 ? (
-        <p className="m-auto max-w-60 text-center text-sm text-muted-foreground">Ask me about flats in Bandra or Khar.</p>
+        restoring ? (
+          <p className="m-auto text-sm text-muted-foreground">Loading your conversation…</p>
+        ) : (
+          <div className="m-auto flex flex-col items-center gap-3">
+            <p className="text-sm text-muted-foreground">Try asking:</p>
+            <ul className="flex flex-wrap justify-center gap-2">
+              {SUGGESTIONS.map((s) => (
+                <li key={s}>
+                  <Button variant="outline" size="sm" className="rounded-full" disabled={streaming} onClick={() => onSuggest(s)}>
+                    {s}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
       ) : (
-        messages.map((m) => (
+        messages.map((m, i) => (
           <div key={m.id} className="flex flex-col gap-2">
+            {m.history && i === 0 && <p className="text-center text-xs text-muted-foreground">Earlier conversation</p>}
             <MessageBubble message={m} />
             {m.listings && m.listings.length > 0 && <ListingCards listings={m.listings} onNavigate={onNavigate} />}
+            {m.history && messages[i + 1] && !messages[i + 1].history && <hr className="mt-1 border-dashed" />}
           </div>
         ))
       )}

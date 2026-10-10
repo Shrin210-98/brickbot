@@ -34,6 +34,8 @@ export function ChatInput({
     onSend(text)
     setValue('')
     if (box.current) box.current.style.height = 'auto'
+    // Send swaps to Stop (and back); keep focus in the textarea, not on a vanished button.
+    box.current?.focus()
   }
 
   return (
@@ -76,7 +78,16 @@ export function ChatInput({
         Enter sends, Shift+Enter adds a new line.
       </span>
       {streaming ? (
-        <Button type="button" variant="outline" size="icon-lg" aria-label="Stop and clear the conversation" onClick={onStop}>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-lg"
+          aria-label="Stop the reply"
+          onClick={() => {
+            onStop()
+            box.current?.focus()
+          }}
+        >
           <Square className="fill-current" />
         </Button>
       ) : (

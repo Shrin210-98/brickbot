@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { streamChatMessage, useCreateChatSession } from '@/api/chat'
-import { ApiError } from '@/lib/api'
-import type { ChatSession, ChatToolName, ListingSummary } from '@/types/api'
+import { streamChatMessage, useChatTranscript, useCreateChatSession } from '@/api/chat'
+import { ApiError, isNotFound } from '@/lib/api'
+import type { ChatLine, ChatSession, ChatToolName, ListingSummary } from '@/types/api'
 
 export interface ChatMessage {
   id: number
@@ -11,6 +11,7 @@ export interface ChatMessage {
   tool?: ChatToolName // the latest tool started, for a "Searching…" hint
   leadCreated?: boolean // a `lead_created` event arrived in this reply
   pending?: boolean // the reply is still streaming
+  history?: boolean // restored from the transcript of an earlier page load
 }
 
 export type ChatStatus = 'idle' | 'streaming' | 'error'
@@ -19,14 +20,18 @@ export interface ChatState {
   messages: ChatMessage[]
   status: ChatStatus
   error: string | null
+  restoring: boolean // a saved session's transcript is still loading
 }
 
 export interface UseChat extends ChatState {
   send: (text: string) => Promise<void>
+  abort: () => void
+  retry: () => Promise<void>
   reset: () => void
 }
 
 const VISITOR_KEY = 'brickbot.visitor_id'
+const SESSION_KEY = 'brickbot.chat_session'
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Used when localStorage is unavailable, so the id lasts for this page load.
@@ -49,6 +54,26 @@ export function getVisitorId(): string {
   return memoryVisitorId
 }
 
+// Returns the session saved by an earlier page load, if any.
+function readSavedSession(): string | null {
+  try {
+    const id = localStorage.getItem(SESSION_KEY)
+    return id && UUID_RE.test(id) ? id : null
+  } catch {
+    return null
+  }
+}
+
+// Saves the conversation's session id, or forgets it when id is null.
+function saveSession(id: string | null) {
+  try {
+    if (id) localStorage.setItem(SESSION_KEY, id)
+    else localStorage.removeItem(SESSION_KEY)
+  } catch {
+    // Storage blocked: the conversation just won't survive a reload.
+  }
+}
+
 // crypto.randomUUID exists only in secure contexts (not on plain-HTTP LAN addresses).
 function uuid(): string {
   if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
@@ -63,6 +88,10 @@ export interface ChatDeps {
   visitorId: string
   createSession: (visitorId: string) => Promise<ChatSession>
   stream?: typeof streamChatMessage
+  // A session saved by an earlier page load. Its transcript is expected via restore.
+  sessionId?: string | null
+  // Called with each new session id, and with null when the session is dropped.
+  onSession?: (id: string | null) => void
 }
 
 export interface Chat {
@@ -71,11 +100,17 @@ export interface Chat {
   send: (text: string) => Promise<void>
   // Aborts the reply in flight, keeping the conversation.
   abort: () => void
+  // After an error, sends the last visitor message again.
+  retry: () => Promise<void>
   // Aborts the reply in flight and starts a new conversation.
   reset: () => void
+  // Puts the saved session's transcript above any newer turns.
+  restore: (lines: ChatLine[]) => void
+  // Gives up restoring; sessionGone also drops the saved session.
+  dropRestore: (sessionGone: boolean) => void
 }
 
-const INITIAL: ChatState = { messages: [], status: 'idle', error: null }
+const INITIAL: ChatState = { messages: [], status: 'idle', error: null, restoring: false }
 
 function errorMessage(err: unknown): string {
   if (err instanceof ApiError) return err.message
@@ -85,9 +120,15 @@ function errorMessage(err: unknown): string {
 
 // createChat holds one visitor's conversation outside React, so the turn logic
 // is testable without a DOM. useChat subscribes to it.
-export function createChat({ visitorId, createSession, stream = streamChatMessage }: ChatDeps): Chat {
-  let state = INITIAL
-  let sessionId: string | null = null
+export function createChat({
+  visitorId,
+  createSession,
+  stream = streamChatMessage,
+  sessionId: saved = null,
+  onSession = () => {},
+}: ChatDeps): Chat {
+  let state: ChatState = { ...INITIAL, restoring: saved !== null }
+  let sessionId = saved
   let inflight: AbortController | null = null
   let nextId = 1
   const listeners = new Set<() => void>()
@@ -127,7 +168,10 @@ export function createChat({ visitorId, createSession, stream = streamChatMessag
     try {
       const id = sessionId ?? (await createSession(visitorId)).id
       if (ctrl.signal.aborted) return
-      sessionId = id
+      if (id !== sessionId) {
+        sessionId = id
+        onSession(id)
+      }
       await stream(
         id,
         { visitor_id: visitorId, content },
@@ -162,7 +206,10 @@ export function createChat({ visitorId, createSession, stream = streamChatMessag
     } catch (err) {
       if (ctrl.signal.aborted) return
       // The session is gone (or not ours): the next message starts a new one.
-      if (err instanceof ApiError && err.status === 404) sessionId = null
+      if (err instanceof ApiError && err.status === 404) {
+        sessionId = null
+        onSession(null)
+      }
       fail(errorMessage(err))
     } finally {
       if (inflight === ctrl) inflight = null
@@ -178,11 +225,36 @@ export function createChat({ visitorId, createSession, stream = streamChatMessag
     set({ status: 'idle', messages: pending ? settle(pending.id) : state.messages })
   }
 
+  function retry() {
+    const last = state.messages.at(-1)
+    if (state.status !== 'error' || last?.role !== 'user') return Promise.resolve()
+    // send appends the message again, so drop the failed copy first.
+    set({ messages: state.messages.slice(0, -1) })
+    return send(last.text)
+  }
+
   function reset() {
     inflight?.abort()
     inflight = null
     sessionId = null
+    onSession(null)
     set(INITIAL)
+  }
+
+  function restore(lines: ChatLine[]) {
+    if (!state.restoring) return
+    const history: ChatMessage[] = lines.map((l) => ({ id: nextId++, role: l.role, text: l.text, history: true }))
+    set({ restoring: false, messages: [...history, ...state.messages] })
+  }
+
+  function dropRestore(sessionGone: boolean) {
+    if (!state.restoring) return
+    // A turn sent meanwhile already moved to a new session; keep that one.
+    if (sessionGone && sessionId === saved) {
+      sessionId = null
+      onSession(null)
+    }
+    set({ restoring: false })
   }
 
   return {
@@ -193,17 +265,34 @@ export function createChat({ visitorId, createSession, stream = streamChatMessag
     },
     send,
     abort,
+    retry,
     reset,
+    restore,
+    dropRestore,
   }
 }
 
 // useChat runs the visitor chatbot: it creates a session on the first
-// message and streams replies into messages.
+// message, streams replies into messages, and saves the session so a reload
+// restores the conversation from its transcript.
 export function useChat(): UseChat {
   // mutateAsync is stable: it is bound to the mutation observer.
   const { mutateAsync: createSession } = useCreateChatSession()
-  const [chat] = useState(() => createChat({ visitorId: getVisitorId(), createSession }))
+  const [{ chat, visitorId, saved }] = useState(() => {
+    const visitorId = getVisitorId()
+    const saved = readSavedSession()
+    return { visitorId, saved, chat: createChat({ visitorId, createSession, sessionId: saved, onSession: saveSession }) }
+  })
   useEffect(() => chat.abort, [chat])
   const state = useSyncExternalStore(chat.subscribe, chat.getState)
-  return { ...state, send: chat.send, reset: chat.reset }
+
+  // Load the saved transcript once, never while a reply streams. A 404 means
+  // the session is gone: drop it quietly and start fresh.
+  const transcript = useChatTranscript(state.restoring && state.status !== 'streaming' ? saved : null, visitorId)
+  useEffect(() => {
+    if (transcript.data) chat.restore(transcript.data)
+    else if (transcript.error) chat.dropRestore(isNotFound(transcript.error))
+  }, [chat, transcript.data, transcript.error])
+
+  return { ...state, send: chat.send, abort: chat.abort, retry: chat.retry, reset: chat.reset }
 }

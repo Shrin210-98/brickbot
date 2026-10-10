@@ -18,6 +18,8 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
   const { data: profile } = useProfile()
   const agent = profile?.full_name.split(' ')[0] || 'the agent'
   const isUser = message.role === 'user'
+  // A finished turn can end in blank lines (the text before a tool call).
+  const text = message.pending ? message.text : message.text.trimEnd()
   // A tool counts as running from its `tool` event until the reply's text grows
   // again: the model only writes once it has read the tool result. Remember the
   // text length when each tool started (state updated during render).
@@ -29,7 +31,7 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
 
   return (
     <div className={cn('flex max-w-[85%] flex-col gap-1', isUser ? 'items-end self-end' : 'items-start self-start')}>
-      {(message.text !== '' || typing) && (
+      {(text !== '' || typing) && (
         <div
           className={cn(
             'rounded-2xl px-3.5 py-2 text-sm break-words whitespace-pre-wrap',
@@ -47,7 +49,7 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
             </span>
           ) : (
             <>
-              {message.text}
+              {text}
               {message.pending && (
                 <span
                   aria-hidden
@@ -65,7 +67,7 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
         </p>
       )}
       {message.leadCreated && (
-        <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-primary" role="status">
           <CircleCheck className="size-3.5" aria-hidden />
           Details shared with {agent}.
         </p>
