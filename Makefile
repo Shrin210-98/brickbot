@@ -9,7 +9,7 @@ COMPOSE := docker compose
 TOOL    := $(COMPOSE) run --rm
 SHADCN  := shadcn@4.21.0
 
-.PHONY: help dev down logs migrate migrate-diff migrate-status sqlc seed reset test lint psql shadcn
+.PHONY: help dev down logs migrate migrate-diff migrate-status sqlc seed reset test lint psql shadcn fetch-images
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -63,3 +63,6 @@ psql: ## Open psql in the postgres container
 shadcn: ## Add a shadcn component (c=<name>)
 	@test -n "$(c)" || { echo "usage: make shadcn c=<component>"; exit 1; }
 	$(COMPOSE) exec frontend npx --yes $(SHADCN) add --yes $(c)
+
+fetch-images: ## Download licensed images listed in scripts/fetch-images.sh
+	./scripts/fetch-images.sh
