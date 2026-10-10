@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, apiFetch, apiPost } from '@/lib/api'
+import { ApiError, apiFetch, apiPost, apiSend } from '@/lib/api'
 
 function mockFetch(res: Response) {
   const fn = vi.fn<typeof fetch>(async () => res)
@@ -58,5 +58,24 @@ describe('apiPost', () => {
     const fn = mockFetch(new Response(null, { status: 204 }))
     await apiPost<void>('/api/auth/logout')
     expect(fn.mock.calls[0][1]?.body).toBeUndefined()
+  })
+})
+
+describe('apiSend', () => {
+  it('passes FormData through without a Content-Type, so the browser sets the boundary', async () => {
+    const fn = mockFetch(Response.json({ id: 'm1' }, { status: 201 }))
+    const form = new FormData()
+    form.append('file', new Blob(['x'], { type: 'image/png' }), 'a.png')
+    await apiSend('POST', '/api/admin/listings/1/media', form)
+    const init = fn.mock.calls[0][1]
+    expect(init?.method).toBe('POST')
+    expect(init?.body).toBe(form)
+    expect(init?.headers).toEqual({ Accept: 'application/json' })
+  })
+
+  it('sends DELETE without a body or Content-Type', async () => {
+    const fn = mockFetch(new Response(null, { status: 204 }))
+    await apiSend<void>('DELETE', '/api/admin/listings/1')
+    expect(fn.mock.calls[0][1]).toMatchObject({ method: 'DELETE', body: undefined, headers: { Accept: 'application/json' } })
   })
 })
