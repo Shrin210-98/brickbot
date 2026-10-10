@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
-import { WhatsAppButton } from '@/components/whatsapp/WhatsAppButton'
+import { ChatFab } from '@/components/chat/ChatFab'
 
 export function PublicLayout() {
   // Home lays out its own full-width section bands; other pages get the content column.
@@ -14,7 +14,7 @@ export function PublicLayout() {
         <Outlet />
       </main>
       <Footer />
-      <WhatsAppButton />
+      <ChatFab />
     </div>
   )
 }
