@@ -35,6 +35,11 @@ func WriteJSON(w http.ResponseWriter, status int, v any) {
 	}
 }
 
+// NoContent writes a 204 response with no body.
+func NoContent(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNoContent)
+}
+
 type errorBody struct {
 	Code    string            `json:"code"`
 	Message string            `json:"message"`
