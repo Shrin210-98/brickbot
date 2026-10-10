@@ -34,6 +34,16 @@ type NewInquiry struct {
 // Create stores a form inquiry. A non-empty ListingSlug must name an active
 // listing, or ErrNotFound.
 func (s *InquiryService) Create(ctx context.Context, in NewInquiry) (db.Inquiry, error) {
+	return s.create(ctx, in, "form", pgtype.UUID{})
+}
+
+// CreateFromChat stores a chatbot lead for a chat session. A session has at
+// most one lead; a second one is ErrConflict.
+func (s *InquiryService) CreateFromChat(ctx context.Context, sessionID pgtype.UUID, in NewInquiry) (db.Inquiry, error) {
+	return s.create(ctx, in, "chat", sessionID)
+}
+
+func (s *InquiryService) create(ctx context.Context, in NewInquiry, source string, chatSessionID pgtype.UUID) (db.Inquiry, error) {
 	if in.Phone == "" && in.Email == "" {
 		return db.Inquiry{}, fmt.Errorf("%w: phone or email is required", ErrInvalid)
 	}
@@ -49,13 +59,17 @@ func (s *InquiryService) Create(ctx context.Context, in NewInquiry) (db.Inquiry,
 		listingID = l.ID
 	}
 	inq, err := s.q.CreateInquiry(ctx, db.CreateInquiryParams{
-		ListingID: listingID,
-		Name:      in.Name,
-		Phone:     in.Phone,
-		Email:     in.Email,
-		Message:   in.Message,
-		Source:    "form",
+		ListingID:     listingID,
+		Name:          in.Name,
+		Phone:         in.Phone,
+		Email:         in.Email,
+		Message:       in.Message,
+		Source:        source,
+		ChatSessionID: chatSessionID,
 	})
+	if isUniqueViolation(err) {
+		return db.Inquiry{}, fmt.Errorf("%w: a lead was already recorded for this conversation", ErrConflict)
+	}
 	if err != nil {
 		return db.Inquiry{}, fmt.Errorf("create inquiry: %w", err)
 	}
