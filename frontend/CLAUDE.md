@@ -8,6 +8,11 @@ TanStack Query, react-router-dom v6, react-hook-form + zod, Vitest.
 - Init with `-b base` (or `-b radix` for Radix).
 - Composition uses `render` prop, not `asChild`.
 - Run `npx shadcn info` to see current config.
+- Links styled as buttons: `<Button nativeButton={false} render={<Link to="…" />}>`.
+- `cn` comes from the `cn` package (shadcn's clsx + tailwind-merge replacement); `@/lib/utils` re-exports it.
+- `form` is an empty stub in the base registry (installs nothing). Decide on a forms approach before Step 6.
+- `src/components/ui/**` is never hand-edited. Its lint exceptions live in `eslint.config.js`;
+  tsc runs without `noUnusedLocals` (eslint covers unused vars) because generated files trip it.
 
 ## React 19
 - No `forwardRef`. `ref` is a normal prop.
