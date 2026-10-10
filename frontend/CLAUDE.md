@@ -10,7 +10,8 @@ TanStack Query, react-router-dom v6, react-hook-form + zod, Vitest.
 - Run `npx shadcn info` to see current config.
 - Links styled as buttons: `<Button nativeButton={false} render={<Link to="…" />}>`.
 - `cn` comes from the `cn` package (shadcn's clsx + tailwind-merge replacement); `@/lib/utils` re-exports it.
-- `form` is an empty stub in the base registry (installs nothing). Decide on a forms approach before Step 6.
+- `form` is an empty stub in the base registry (installs nothing), so it is not used.
+  Forms are react-hook-form + zod, laid out with the shadcn `field` component (see Forms).
 - `src/components/ui/**` is never hand-edited. Its lint exceptions live in `eslint.config.js`;
   tsc runs without `noUnusedLocals` (eslint covers unused vars) because generated files trip it.
 
@@ -25,6 +26,13 @@ TanStack Query, react-router-dom v6, react-hook-form + zod, Vitest.
 - `src/api/*`: TanStack Query hooks. **All server state goes through these. No `fetch` inside components.**
 - `src/layouts/`: `PublicLayout` (contains the WhatsApp button and chat launcher) and `AdminLayout` (auth guard via `/api/auth/me`).
 - `src/pages/`, `src/components/{listings,inquiry,chat,admin,whatsapp}/`, `src/components/ui/` (shadcn, generated).
+
+## Forms
+- `useForm<z.input<S>, unknown, z.output<S>>({ resolver: zodResolver(S) })`, so submit handlers get trimmed values.
+- Layout: `FieldGroup` > `Field data-invalid` > `FieldLabel` + input (`aria-invalid`, `{...register()}`) + `FieldError errors={[errors.x]}`.
+- Server errors: `applyFieldErrors(err, setError, fields)` from `src/lib/form-errors.ts` maps a 422 onto fields;
+  when it returns false, set `root.server` and render it in a destructive `Alert`.
+- Schemas used by one page may live in that file; shared or tested ones get their own `*-schema.ts`.
 
 ## Rules
 - Add shadcn components only with `make shadcn c=<name>`.
