@@ -77,6 +77,7 @@ func main() {
 		AdminListings: handlers.NewAdminListingsHandler(services.NewAdminListingService(q), services.NewMediaService(q, cfg.UploadDir)),
 		Media:         handlers.NewMediaHandler(cfg.UploadDir),
 		Chat:          handlers.NewChatHandler(chatSvc),
+		Testimonials:  handlers.NewTestimonialsHandler(services.NewTestimonialService(q)),
 	}, server.Security{
 		AppOrigin:  cfg.AppOrigin,
 		TrustProxy: cfg.TrustProxy,

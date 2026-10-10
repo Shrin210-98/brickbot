@@ -19,6 +19,7 @@ type Handlers struct {
 	AdminListings *handlers.AdminListingsHandler
 	Media         *handlers.MediaHandler
 	Chat          *handlers.ChatHandler
+	Testimonials  *handlers.TestimonialsHandler
 }
 
 // Security configures the middleware that guards routes.
@@ -63,6 +64,7 @@ func Routes(h Handlers, sec Security) http.Handler {
 	mux.HandleFunc("GET /api/listings/featured", h.Listings.Featured)
 	mux.HandleFunc("GET /api/listings/facets", h.Listings.Facets)
 	mux.HandleFunc("GET /api/listings/{slug}", h.Listings.Get)
+	mux.HandleFunc("GET /api/testimonials", h.Testimonials.List)
 	mux.Handle("POST /api/inquiries", inquiryLimit(http.HandlerFunc(h.Inquiries.Create)))
 	mux.HandleFunc("GET /media/{path...}", h.Media.Serve)
 
