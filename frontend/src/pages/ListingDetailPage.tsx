@@ -2,6 +2,7 @@ import { ArrowLeft, Bath, BedDouble, Building2, MapPin, MessageCircle, Phone, Ru
 import { Link, useParams } from 'react-router-dom'
 import { useListing } from '@/api/listings'
 import { useMarket, useProfile } from '@/api/profile'
+import { InquiryForm } from '@/components/inquiry/InquiryForm'
 import { EmptyState } from '@/components/listings/EmptyState'
 import { ListingGallery } from '@/components/listings/ListingGallery'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -155,8 +156,14 @@ export function ListingDetailPage() {
           )}
         </div>
 
-        <aside className="lg:sticky lg:top-20 lg:self-start">
+        <aside className="flex flex-col gap-6 lg:sticky lg:top-20 lg:self-start">
           <ContactCard listing={listing} />
+          <Card>
+            <CardContent className="flex flex-col gap-4">
+              <p className="font-medium">Send an inquiry</p>
+              <InquiryForm listingSlug={listing.slug} />
+            </CardContent>
+          </Card>
         </aside>
       </div>
     </div>

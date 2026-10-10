@@ -26,6 +26,9 @@ export function PublicLayout() {
             <NavLink to="/listings" className={navLinkClass}>
               Listings
             </NavLink>
+            <NavLink to="/contact" className={navLinkClass}>
+              Contact
+            </NavLink>
           </nav>
         </div>
       </header>
