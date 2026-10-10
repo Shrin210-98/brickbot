@@ -35,12 +35,18 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   return (await res.json()) as T
 }
 
-export function apiPost<T>(path: string, body?: unknown): Promise<T> {
+// Sends FormData as multipart (the browser sets the boundary) and anything else as JSON.
+export function apiSend<T>(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T> {
+  if (body instanceof FormData) return apiFetch<T>(path, { method, body })
   return apiFetch<T>(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method,
+    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
+}
+
+export function apiPost<T>(path: string, body?: unknown): Promise<T> {
+  return apiSend<T>('POST', path, body)
 }
 
 export function isNotFound(err: unknown): boolean {

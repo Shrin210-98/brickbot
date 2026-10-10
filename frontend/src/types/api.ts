@@ -97,6 +97,60 @@ export interface InquiryCreated {
   created_at: string
 }
 
+// Admin
+
+export type InquiryStatus = 'new' | 'contacted' | 'closed' | 'spam'
+export type InquirySource = 'form' | 'chat'
+
+export interface Inquiry {
+  id: string
+  listing: { id: string; slug: string; title: string } | null
+  name: string
+  phone: string
+  email: string
+  message: string
+  source: InquirySource
+  status: InquiryStatus
+  admin_note: string
+  created_at: string
+  updated_at: string
+}
+
+// PATCH /api/admin/inquiries/{id}: at least one field.
+export interface InquiryUpdate {
+  status?: InquiryStatus
+  admin_note?: string
+}
+
+// POST /api/admin/listings and PUT /api/admin/listings/{id}.
+// slug omitted → generated (create) or unchanged (update).
+export interface ListingWrite {
+  slug?: string
+  title: string
+  description: string
+  purpose: Purpose
+  property_type: PropertyType
+  status: ListingStatus
+  price: number
+  bedrooms: number | null
+  bathrooms: number | null
+  area: number | null
+  city: string
+  locality: string
+  address: string
+  featured: boolean
+}
+
+export interface MediaOrder {
+  media_ids: string[]
+}
+
+// Query params accepted by the admin list routes.
+export interface AdminListQuery<S extends string> {
+  status?: S
+  page: number
+}
+
 export interface LoginRequest {
   email: string
   password: string

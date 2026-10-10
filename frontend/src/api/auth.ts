@@ -32,6 +32,9 @@ export function useLogout() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: () => apiPost<void>('/api/auth/logout'),
-    onSuccess: () => qc.setQueryData(ME_KEY, null),
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: ['admin'] })
+      qc.setQueryData(ME_KEY, null)
+    },
   })
 }
