@@ -18,7 +18,12 @@ CREATE TABLE salesman_profile (
   admin_email         text        NOT NULL DEFAULT '',     -- login email, set by seed from ADMIN_EMAIL; not shown publicly
   admin_password_hash text        NOT NULL,                -- bcrypt
   created_at          timestamptz NOT NULL DEFAULT now(),
-  updated_at          timestamptz NOT NULL DEFAULT now()
+  updated_at          timestamptz NOT NULL DEFAULT now(),
+  tagline             text,
+  years_experience    smallint,
+  deals_closed        integer,
+  specialties         text[]      NOT NULL DEFAULT '{}',
+  process_steps       jsonb       NOT NULL DEFAULT '[]'    -- [{"title": "...", "description": "..."}, ...]
 );
 
 CREATE TABLE listings (
@@ -54,6 +59,22 @@ CREATE TABLE listing_media (
 );
 
 CREATE INDEX listing_media_listing_id_position_idx ON listing_media (listing_id, position);
+
+-- Client testimonials for the public site. Only is_published rows are public.
+CREATE TABLE testimonials (
+  id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  author_name      text        NOT NULL,
+  author_title     text,                                   -- e.g. "First-time buyer, Bandra West"
+  author_photo_url text,
+  quote            text        NOT NULL,
+  rating           smallint    CHECK (rating BETWEEN 1 AND 5),
+  listing_id       uuid        REFERENCES listings (id) ON DELETE SET NULL,
+  is_published     boolean     NOT NULL DEFAULT false,
+  position         smallint    NOT NULL DEFAULT 0,
+  created_at       timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX testimonials_is_published_position_idx ON testimonials (is_published, position);
 
 -- One chatbot conversation, bound to the browser's visitor_id. See docs/chatbot.md.
 CREATE TABLE chat_sessions (

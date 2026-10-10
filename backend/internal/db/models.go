@@ -83,4 +83,22 @@ type SalesmanProfile struct {
 	AdminPasswordHash string
 	CreatedAt         pgtype.Timestamptz
 	UpdatedAt         pgtype.Timestamptz
+	Tagline           *string
+	YearsExperience   *int16
+	DealsClosed       *int32
+	Specialties       []string
+	ProcessSteps      []byte
+}
+
+type Testimonial struct {
+	ID             pgtype.UUID
+	AuthorName     string
+	AuthorTitle    *string
+	AuthorPhotoUrl *string
+	Quote          string
+	Rating         *int16
+	ListingID      pgtype.UUID
+	IsPublished    bool
+	Position       int16
+	CreatedAt      pgtype.Timestamptz
 }

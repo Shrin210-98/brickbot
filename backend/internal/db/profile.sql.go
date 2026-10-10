@@ -58,7 +58,7 @@ func (q *Queries) GetAdminCredentials(ctx context.Context) (GetAdminCredentialsR
 }
 
 const getProfile = `-- name: GetProfile :one
-SELECT id, name, phone, whatsapp_number, email, bio, service_areas, photo_path, country_code, currency, area_unit, admin_email, admin_password_hash, created_at, updated_at FROM salesman_profile WHERE id = 1
+SELECT id, name, phone, whatsapp_number, email, bio, service_areas, photo_path, country_code, currency, area_unit, admin_email, admin_password_hash, created_at, updated_at, tagline, years_experience, deals_closed, specialties, process_steps FROM salesman_profile WHERE id = 1
 `
 
 func (q *Queries) GetProfile(ctx context.Context) (SalesmanProfile, error) {
@@ -80,6 +80,11 @@ func (q *Queries) GetProfile(ctx context.Context) (SalesmanProfile, error) {
 		&i.AdminPasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Tagline,
+		&i.YearsExperience,
+		&i.DealsClosed,
+		&i.Specialties,
+		&i.ProcessSteps,
 	)
 	return i, err
 }
@@ -98,7 +103,7 @@ UPDATE salesman_profile
 SET name = $1, phone = $2, whatsapp_number = $3, email = $4, bio = $5, service_areas = $6,
     photo_path = $7, country_code = $8, currency = $9, area_unit = $10, updated_at = now()
 WHERE id = 1
-RETURNING id, name, phone, whatsapp_number, email, bio, service_areas, photo_path, country_code, currency, area_unit, admin_email, admin_password_hash, created_at, updated_at
+RETURNING id, name, phone, whatsapp_number, email, bio, service_areas, photo_path, country_code, currency, area_unit, admin_email, admin_password_hash, created_at, updated_at, tagline, years_experience, deals_closed, specialties, process_steps
 `
 
 type UpdateProfileParams struct {
@@ -144,6 +149,11 @@ func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) (S
 		&i.AdminPasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Tagline,
+		&i.YearsExperience,
+		&i.DealsClosed,
+		&i.Specialties,
+		&i.ProcessSteps,
 	)
 	return i, err
 }
