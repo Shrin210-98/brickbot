@@ -83,6 +83,29 @@ export interface ListingFacets {
   bedrooms: ValueCount<number>[]
 }
 
+// POST /api/inquiries body. Empty strings are allowed; the API trims them.
+export interface InquiryCreate {
+  name: string
+  phone: string
+  email: string
+  message: string
+  listing_slug?: string
+}
+
+export interface InquiryCreated {
+  id: string
+  created_at: string
+}
+
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export interface Me {
+  email: string
+}
+
 // Query params accepted by GET /api/listings (minus page_size, which the client fixes).
 export interface ListingQuery {
   purpose?: Purpose

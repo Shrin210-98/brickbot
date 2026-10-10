@@ -15,6 +15,7 @@ export class ApiError extends Error {
 }
 
 // Fetch wrapper for /api. Throws ApiError for every non-2xx response.
+// A 204 resolves to undefined, so callers expecting no body should use T = void.
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
@@ -30,7 +31,16 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       body?.error.fields,
     )
   }
+  if (res.status === 204) return undefined as T
   return (await res.json()) as T
+}
+
+export function apiPost<T>(path: string, body?: unknown): Promise<T> {
+  return apiFetch<T>(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
 }
 
 export function isNotFound(err: unknown): boolean {
