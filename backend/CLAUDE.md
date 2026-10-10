@@ -37,3 +37,20 @@ Follow `docs/chatbot.md`:
 
 ## Testing
 `make test` runs `go test ./...` with `DATABASE_URL` pointed at the `brickbot_test` database (migrated first). Prefer table-driven tests.
+
+## Handler shape
+decode → validate.Struct (422 with `fields`) → service → map domain error
+(ErrNotFound→404, ErrConflict→409, ErrInvalid→400) → write DTO. Never return
+a sqlc struct.
+
+## sqlc
+`internal/db/*.go` is generated. Never edit it. Change `db/queries/*.sql`
+and run `make sqlc`.
+
+## Middleware order
+RequestID → Logger → Recover → Origin check → RequireAdmin (admin mux) →
+RateLimit → handler. SSE disables the write timeout via `http.ResponseController`.
+
+## Atlas
+Never invoke Atlas directly. Use `make migrate*`. Shadow DB `atlas_dev` is
+created by `postgres/init/01-databases.sql`.

@@ -34,3 +34,20 @@ The Makefile exports `HOST_UID`/`HOST_GID` so containers write files owned by yo
 - YAGNI: no abstractions "for the future". No new dependencies without asking.
 - JSON is `snake_case` end to end.
 - Defaults: India / INR / sqft (configured in the profile row), local-disk media at `/media/`, no notifications, English UI.
+
+## Env
+- `.env` is gitignored, mode 600, never printed or committed.
+- Only `.env.example` is committed; keep them in sync.
+- Compose uses `HOST_UID`/`HOST_GID`, not `UID`/`GID`.
+
+## Sandbox
+- `aidev` is intentionally not in sudoers. Never attempt `sudo`.
+- If a command fails with a permissions error, stop and ask — do not retry with `sudo`.
+
+## Docs
+- Update `docs/api.md` when a route changes.
+- Update `docs/chatbot.md` when chatbot behavior, tools, or SSE events change.
+
+## Git
+- Never commit `.env`, `uploads/`, `node_modules/`, `pgdata/`.
+- No `git push --force` to main.
