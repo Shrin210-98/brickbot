@@ -1,3 +1,4 @@
+// Package main runs the BrickBot HTTP API.
 package main
 
 import (
@@ -9,32 +10,57 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"brickbot/internal/db"
+	"brickbot/internal/handlers"
+	"brickbot/internal/server"
+	"brickbot/internal/services"
 )
 
-// Step 1 stub: serves a static /api/healthz so compose healthchecks pass.
-// Config, DB pool and the real router arrive in steps 2–3.
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	slog.SetDefault(log)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Error("DATABASE_URL is required")
+		os.Exit(1)
+	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
-	})
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	pool, err := pgxpool.New(ctx, dbURL)
+	if err != nil {
+		log.Error("db pool", "err", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+	pingCtx, cancelPing := context.WithTimeout(ctx, 5*time.Second)
+	err = pool.Ping(pingCtx)
+	cancelPing()
+	if err != nil {
+		log.Error("db ping", "err", err)
+		os.Exit(1)
+	}
+
+	q := db.New(pool)
+	mux := server.Routes(
+		handlers.NewProfileHandler(services.NewProfileService(q)),
+		handlers.NewListingsHandler(services.NewListingService(q)),
+	)
 
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           mux,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	go func() {
 		log.Info("api listening", "addr", srv.Addr)
