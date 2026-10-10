@@ -29,6 +29,16 @@ type seedProfile struct {
 	Email          string   `json:"email"`
 	Bio            string   `json:"bio"`
 	ServiceAreas   []string `json:"service_areas"`
+
+	Tagline         *string           `json:"tagline"`
+	Headline        *string           `json:"headline"`
+	LicenseNo       *string           `json:"license_no"`
+	AgencyName      *string           `json:"agency_name"`
+	YearsExperience *int16            `json:"years_experience"`
+	DealsClosed     *int32            `json:"deals_closed"`
+	Specialties     []string          `json:"specialties"`
+	ProcessSteps    json.RawMessage   `json:"process_steps"`
+	Socials         map[string]string `json:"socials"`
 }
 
 type seedListing struct {
@@ -72,6 +82,9 @@ func run() error {
 	q := db.New(pool)
 
 	if err := seedProfileRow(ctx, q); err != nil {
+		return err
+	}
+	if err := fillProfileMarketing(ctx, q); err != nil {
 		return err
 	}
 	return seedListings(ctx, q)
@@ -122,6 +135,42 @@ func seedProfileRow(ctx context.Context, q *db.Queries) error {
 		return fmt.Errorf("create profile: %w", err)
 	}
 	slog.Info("profile created")
+	return nil
+}
+
+// fillProfileMarketing sets the marketing fields (tagline, stats, process,
+// …) that are still empty, so existing profiles pick them up without any
+// field being overwritten.
+func fillProfileMarketing(ctx context.Context, q *db.Queries) error {
+	var p seedProfile
+	if err := readJSON("seed/profile.json", &p); err != nil {
+		return err
+	}
+	if p.Specialties == nil {
+		p.Specialties = []string{}
+	}
+	steps := []byte(p.ProcessSteps)
+	if len(steps) == 0 {
+		steps = []byte("[]")
+	}
+	socials, err := json.Marshal(p.Socials)
+	if err != nil || p.Socials == nil {
+		socials = []byte("{}")
+	}
+	if err := q.FillProfileMarketing(ctx, db.FillProfileMarketingParams{
+		Tagline:         p.Tagline,
+		Headline:        p.Headline,
+		LicenseNo:       p.LicenseNo,
+		AgencyName:      p.AgencyName,
+		YearsExperience: p.YearsExperience,
+		DealsClosed:     p.DealsClosed,
+		Specialties:     p.Specialties,
+		ProcessSteps:    steps,
+		Socials:         socials,
+	}); err != nil {
+		return fmt.Errorf("fill profile marketing: %w", err)
+	}
+	slog.Info("profile marketing fields filled where empty")
 	return nil
 }
 

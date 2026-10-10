@@ -1,8 +1,21 @@
 {
-  "name": "Ravi Kumar",
+  "name": "Ravi Sharma",
   "phone": "+919876543210",
   "whatsapp_number": "919876543210",
   "email": "ravi@example.com",
-  "bio": "Residential and commercial property in western Mumbai.",
-  "service_areas": ["Andheri West", "Bandra", "Juhu", "Goregaon"]
+  "bio": "I've helped Mumbai families buy, sell and rent homes for over a decade. Most of my clients are first-time buyers and families moving within the western suburbs, so I spend a lot of time explaining society paperwork, home-loan steps and what a fair price really looks like. I live in Bandra West, I pick up my own phone, and I'll tell you honestly when a flat isn't right for you.",
+  "service_areas": ["Bandra West", "Khar", "Santacruz", "Andheri West"],
+  "tagline": "Your neighbour in Mumbai real estate",
+  "headline": "Family homes, first-time buyers and society resales in Bandra and Khar.",
+  "license_no": "A51900012345",
+  "years_experience": 12,
+  "deals_closed": 340,
+  "specialties": ["First-time buyers", "Society resales", "Family homes", "Home-loan guidance", "Rentals", "NRI clients"],
+  "process_steps": [
+    {"title": "Understand", "description": "We sit down over chai and talk budget, neighbourhood, schools and commute, so I know what home means for you."},
+    {"title": "Shortlist", "description": "I send a short, honest list of flats that fit, with society details and fair-price notes for each."},
+    {"title": "Visit", "description": "We see them together on your schedule, evenings and weekends included. I point out what brochures leave out."},
+    {"title": "Keys", "description": "I handle negotiation, the agreement, society NOC and registration until the keys are in your hand."}
+  ],
+  "socials": {}
 }
