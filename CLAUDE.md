@@ -52,10 +52,12 @@ The Makefile exports `HOST_UID`/`HOST_GID` so containers write files owned by yo
 - Never commit `.env`, `uploads/`, `node_modules/`, `pgdata/`.
 - Never `git push --force`.
 - Never `git reset --hard` without asking first.
-- Do NOT push. Commit locally only — pushing is a manual decision the user makes.
-- At the end of each step, output a **list** of proposed commits (one per
-  logical unit — see Commits section). Do NOT run `git commit`. The user
-  commits manually, one by one.
+- Do NOT push. Pushing is a manual decision the user makes.
+- At the end of each step, **commit the work yourself** in the logical
+  units described in the Commits section. Use `git add` with explicit
+  paths — never `git add -A` or `git add .`.
+- Output the list of commits you made (subject + hash) at the end of
+  your step report.
 
 ## Commits
 - Split commits by concern, not by step. A single step should produce
@@ -80,6 +82,4 @@ The Makefile exports `HOST_UID`/`HOST_GID` so containers write files owned by yo
 - Conventional Commits: `type(scope): subject`.
 - Body explains *why*, not just *what*.
 - If a change is knowingly incomplete, prefix with `wip(...)`.
-- At the end of a step, output the full list of proposed commits as a
-  fenced block: subject, body, and file list for each. The user commits
-  manually.
+- Use `git add <explicit paths>` — never `git add -A` or `git add .`.
