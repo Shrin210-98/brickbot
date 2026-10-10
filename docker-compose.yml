@@ -33,6 +33,9 @@ services:
     build:
       context: ./backend
       target: dev
+      args:
+        HOST_UID: ${HOST_UID:-1000}
+        HOST_GID: ${HOST_GID:-1000}
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     env_file: .env
     volumes:
