@@ -4,6 +4,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { useFeaturedListings } from '@/api/listings'
 import { useProfile } from '@/api/profile'
 import { images } from '@/assets/images'
+import { ListingsCarousel } from '@/components/blocks/ListingsCarousel'
+import { TestimonialsCarousel } from '@/components/blocks/TestimonialsCarousel'
 import { InquiryForm } from '@/components/inquiry/InquiryForm'
 import { siteName } from '@/components/layout/nav'
 import { EmptyState } from '@/components/listings/EmptyState'
@@ -78,7 +80,7 @@ function Hero({ profile }: { profile: Profile | null }) {
   return (
     // The image and overlay are absolute against the section, so they bleed
     // to its edges while the content keeps Section's max-w-6xl wrapper.
-    <Section id="hero" className="relative isolate overflow-hidden pt-12 md:pt-20">
+    <Section id="hero" className="relative isolate overflow-hidden pt-12 pb-24 md:pt-20 md:pb-0">
       <img
         src={images.hero.home}
         alt=""
@@ -101,13 +103,13 @@ function Hero({ profile }: { profile: Profile | null }) {
             {heroSubhead(profile)}
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
-            <Button className="h-11 px-6 text-base" nativeButton={false} render={<Link to="/listings" />}>
+            <Button className="h-11 w-full px-6 text-base sm:w-auto" nativeButton={false} render={<Link to="/listings" />}>
               Browse Listings <ArrowRight data-icon="inline-end" />
             </Button>
             {whatsapp && (
               <Button
                 variant="outline"
-                className="h-11 px-6 text-base"
+                className="h-11 w-full px-6 text-base sm:w-auto"
                 nativeButton={false}
                 render={<a href={whatsapp} target="_blank" rel="noopener noreferrer" />}
               >
@@ -226,13 +228,15 @@ function FeaturedListings() {
             <AlertTitle>Couldn't load featured listings</AlertTitle>
             <AlertDescription>{featured.error.message}</AlertDescription>
           </Alert>
-        ) : (
+        ) : featured.isPending || featured.data.items.length === 0 ? (
           <ListingGrid
             items={featured.data?.items}
             isLoading={featured.isPending}
             skeletonCount={3}
             empty={<EmptyState title="No featured listings yet" description="Featured properties will appear here once they're published." />}
           />
+        ) : (
+          <ListingsCarousel items={featured.data.items} />
         )}
       </div>
     </Section>
@@ -278,10 +282,12 @@ export function HomePage() {
       <FeaturedListings />
       {/* 8c: testimonials */}
       <Section id="testimonials" className="bg-secondary">
-        <div className="flex flex-col gap-3">
-          <Eyebrow>Testimonials</Eyebrow>
-          <h2 className="text-3xl/[1.2]">What clients say</h2>
-          <p className="text-muted-foreground">Client stories will appear here.</p>
+        <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-3">
+            <Eyebrow>Testimonials</Eyebrow>
+            <h2 className="text-3xl/[1.2]">What clients say</h2>
+          </div>
+          <TestimonialsCarousel />
         </div>
       </Section>
       {/* 8c: redesigned contact section */}

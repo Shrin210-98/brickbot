@@ -1,10 +1,24 @@
-import { Bath, BedDouble, Building2, MapPin, Ruler } from 'lucide-react'
+import { Bath, BedDouble, MapPin, Ruler } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useMarket } from '@/api/profile'
+import { images } from '@/assets/images'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatArea, formatPrice, PROPERTY_TYPE_LABELS, PURPOSE_LABELS } from '@/lib/format'
 import type { ListingSummary } from '@/types/api'
+
+const PLACEHOLDERS = Object.values(images.listings)
+
+// 32-bit FNV-1a. Only needs to be stable, so the same listing always gets the
+// same placeholder photo.
+function hash(s: string): number {
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  return h >>> 0
+}
 
 export function ListingCard({ listing }: { listing: ListingSummary }) {
   const market = useMarket()
@@ -17,13 +31,12 @@ export function ListingCard({ listing }: { listing: ListingSummary }) {
     >
       <Card className="h-full gap-0 overflow-hidden py-0 transition-shadow group-hover:shadow-md">
         <div className="relative aspect-[4/3] bg-muted">
-          {listing.cover_url ? (
-            <img src={listing.cover_url} alt="" loading="lazy" className="size-full object-cover" />
-          ) : (
-            <div className="flex size-full items-center justify-center text-muted-foreground">
-              <Building2 className="size-10" />
-            </div>
-          )}
+          <img
+            src={listing.cover_url ?? PLACEHOLDERS[hash(listing.slug) % PLACEHOLDERS.length]}
+            alt=""
+            loading="lazy"
+            className="size-full object-cover"
+          />
           <Badge className="absolute top-3 left-3">{PURPOSE_LABELS[listing.purpose]}</Badge>
         </div>
         <CardContent className="flex flex-col gap-2 p-4">
