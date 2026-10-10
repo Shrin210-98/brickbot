@@ -3,7 +3,7 @@
 A real estate web app for **one salesman**. It has public listings, an inquiry form, wa.me links, an admin area behind a single password, and a Claude chatbot that answers only from real listings and creates leads after the visitor consents.
 
 - `backend/`: Go 1.27, net/http method-pattern router, Postgres 16, sqlc, Atlas. See `backend/CLAUDE.md`.
-- `frontend/`: React 18, TS, Vite, Tailwind v4, shadcn/ui, TanStack Query. See `frontend/CLAUDE.md`.
+- `frontend/`: React 19, TS, Vite, Tailwind v4, shadcn/ui, TanStack Query. See `frontend/CLAUDE.md`.
 - `docs/api.md`: every route. `docs/chatbot.md`: chatbot design and the SSE contract.
 
 ## Out of scope (do not build unless asked)
@@ -50,4 +50,36 @@ The Makefile exports `HOST_UID`/`HOST_GID` so containers write files owned by yo
 
 ## Git
 - Never commit `.env`, `uploads/`, `node_modules/`, `pgdata/`.
-- No `git push --force` to main.
+- Never `git push --force`.
+- Never `git reset --hard` without asking first.
+- Do NOT push. Commit locally only — pushing is a manual decision the user makes.
+- At the end of each step, output a **list** of proposed commits (one per
+  logical unit — see Commits section). Do NOT run `git commit`. The user
+  commits manually, one by one.
+
+## Commits
+- Split commits by concern, not by step. A single step should produce
+  several commits — one per logical unit.
+- Typical split for a backend step:
+    db (schema + migrations + queries + regenerated code)
+    infra (config, middleware, auth, httpx)
+    services
+    handlers + routes
+    seed
+    tests
+    docs + config files (.env.example, CLAUDE.md, go.mod)
+- Typical split for a frontend step:
+    build config (vite, ts, eslint, package.json)
+    UI primitives (components/ui)
+    types + api client
+    pages + layout + components
+    tests
+    docs
+- Order: dependencies first (db → types → services → handlers/pages → tests → docs).
+- Each commit must build and pass `make lint` on its own.
+- Conventional Commits: `type(scope): subject`.
+- Body explains *why*, not just *what*.
+- If a change is knowingly incomplete, prefix with `wip(...)`.
+- At the end of a step, output the full list of proposed commits as a
+  fenced block: subject, body, and file list for each. The user commits
+  manually.
