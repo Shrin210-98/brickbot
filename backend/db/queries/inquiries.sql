@@ -1,8 +1,9 @@
 -- ---------- inquiries ----------
 
+-- chat_session_id is NULL for form inquiries.
 -- name: CreateInquiry :one
-INSERT INTO inquiries (listing_id, name, phone, email, message, source)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO inquiries (listing_id, name, phone, email, message, source, chat_session_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
 -- Admin: newest first, optional status filter. Joins the listing for display.

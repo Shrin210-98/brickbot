@@ -25,21 +25,23 @@ func (q *Queries) CountInquiries(ctx context.Context, status *string) (int64, er
 
 const createInquiry = `-- name: CreateInquiry :one
 
-INSERT INTO inquiries (listing_id, name, phone, email, message, source)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, listing_id, name, phone, email, message, source, status, admin_note, created_at, updated_at
+INSERT INTO inquiries (listing_id, name, phone, email, message, source, chat_session_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, listing_id, name, phone, email, message, source, status, admin_note, created_at, updated_at, chat_session_id
 `
 
 type CreateInquiryParams struct {
-	ListingID pgtype.UUID
-	Name      string
-	Phone     string
-	Email     string
-	Message   string
-	Source    string
+	ListingID     pgtype.UUID
+	Name          string
+	Phone         string
+	Email         string
+	Message       string
+	Source        string
+	ChatSessionID pgtype.UUID
 }
 
 // ---------- inquiries ----------
+// chat_session_id is NULL for form inquiries.
 func (q *Queries) CreateInquiry(ctx context.Context, arg CreateInquiryParams) (Inquiry, error) {
 	row := q.db.QueryRow(ctx, createInquiry,
 		arg.ListingID,
@@ -48,6 +50,7 @@ func (q *Queries) CreateInquiry(ctx context.Context, arg CreateInquiryParams) (I
 		arg.Email,
 		arg.Message,
 		arg.Source,
+		arg.ChatSessionID,
 	)
 	var i Inquiry
 	err := row.Scan(
@@ -62,31 +65,33 @@ func (q *Queries) CreateInquiry(ctx context.Context, arg CreateInquiryParams) (I
 		&i.AdminNote,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ChatSessionID,
 	)
 	return i, err
 }
 
 const getInquiry = `-- name: GetInquiry :one
-SELECT i.id, i.listing_id, i.name, i.phone, i.email, i.message, i.source, i.status, i.admin_note, i.created_at, i.updated_at, l.slug AS listing_slug, l.title AS listing_title
+SELECT i.id, i.listing_id, i.name, i.phone, i.email, i.message, i.source, i.status, i.admin_note, i.created_at, i.updated_at, i.chat_session_id, l.slug AS listing_slug, l.title AS listing_title
 FROM inquiries i
 LEFT JOIN listings l ON l.id = i.listing_id
 WHERE i.id = $1
 `
 
 type GetInquiryRow struct {
-	ID           pgtype.UUID
-	ListingID    pgtype.UUID
-	Name         string
-	Phone        string
-	Email        string
-	Message      string
-	Source       string
-	Status       string
-	AdminNote    string
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
-	ListingSlug  *string
-	ListingTitle *string
+	ID            pgtype.UUID
+	ListingID     pgtype.UUID
+	Name          string
+	Phone         string
+	Email         string
+	Message       string
+	Source        string
+	Status        string
+	AdminNote     string
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+	ChatSessionID pgtype.UUID
+	ListingSlug   *string
+	ListingTitle  *string
 }
 
 func (q *Queries) GetInquiry(ctx context.Context, id pgtype.UUID) (GetInquiryRow, error) {
@@ -104,6 +109,7 @@ func (q *Queries) GetInquiry(ctx context.Context, id pgtype.UUID) (GetInquiryRow
 		&i.AdminNote,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ChatSessionID,
 		&i.ListingSlug,
 		&i.ListingTitle,
 	)
@@ -111,7 +117,7 @@ func (q *Queries) GetInquiry(ctx context.Context, id pgtype.UUID) (GetInquiryRow
 }
 
 const listInquiries = `-- name: ListInquiries :many
-SELECT i.id, i.listing_id, i.name, i.phone, i.email, i.message, i.source, i.status, i.admin_note, i.created_at, i.updated_at, l.slug AS listing_slug, l.title AS listing_title
+SELECT i.id, i.listing_id, i.name, i.phone, i.email, i.message, i.source, i.status, i.admin_note, i.created_at, i.updated_at, i.chat_session_id, l.slug AS listing_slug, l.title AS listing_title
 FROM inquiries i
 LEFT JOIN listings l ON l.id = i.listing_id
 WHERE ($1::text IS NULL OR i.status = $1)
@@ -126,19 +132,20 @@ type ListInquiriesParams struct {
 }
 
 type ListInquiriesRow struct {
-	ID           pgtype.UUID
-	ListingID    pgtype.UUID
-	Name         string
-	Phone        string
-	Email        string
-	Message      string
-	Source       string
-	Status       string
-	AdminNote    string
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
-	ListingSlug  *string
-	ListingTitle *string
+	ID            pgtype.UUID
+	ListingID     pgtype.UUID
+	Name          string
+	Phone         string
+	Email         string
+	Message       string
+	Source        string
+	Status        string
+	AdminNote     string
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+	ChatSessionID pgtype.UUID
+	ListingSlug   *string
+	ListingTitle  *string
 }
 
 // Admin: newest first, optional status filter. Joins the listing for display.
@@ -163,6 +170,7 @@ func (q *Queries) ListInquiries(ctx context.Context, arg ListInquiriesParams) ([
 			&i.AdminNote,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ChatSessionID,
 			&i.ListingSlug,
 			&i.ListingTitle,
 		); err != nil {

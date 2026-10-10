@@ -55,21 +55,43 @@ CREATE TABLE listing_media (
 
 CREATE INDEX listing_media_listing_id_position_idx ON listing_media (listing_id, position);
 
--- Leads from the public inquiry form (source = 'form') and, later, the chatbot (source = 'chat').
-CREATE TABLE inquiries (
+-- One chatbot conversation, bound to the browser's visitor_id. See docs/chatbot.md.
+CREATE TABLE chat_sessions (
   id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  listing_id uuid        REFERENCES listings (id) ON DELETE SET NULL,
-  name       text        NOT NULL,
-  phone      text        NOT NULL DEFAULT '',
-  email      text        NOT NULL DEFAULT '',
-  message    text        NOT NULL DEFAULT '',
-  source     text        NOT NULL DEFAULT 'form' CHECK (source IN ('form', 'chat')),
-  status     text        NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'closed', 'spam')),
-  admin_note text        NOT NULL DEFAULT '',
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
+  visitor_id uuid        NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Append-only history: one row per Anthropic API turn, never updated or deleted.
+-- content is the raw content-block array as sent to / received from the API.
+CREATE TABLE chat_messages (
+  id         bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  session_id uuid        NOT NULL REFERENCES chat_sessions (id) ON DELETE CASCADE,
+  role       text        NOT NULL CHECK (role IN ('user', 'assistant')),
+  content    jsonb       NOT NULL CHECK (jsonb_typeof(content) = 'array'),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX chat_messages_session_id_id_idx ON chat_messages (session_id, id);
+
+-- Leads from the public inquiry form (source = 'form') and the chatbot (source = 'chat').
+CREATE TABLE inquiries (
+  id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  listing_id      uuid        REFERENCES listings (id) ON DELETE SET NULL,
+  name            text        NOT NULL,
+  phone           text        NOT NULL DEFAULT '',
+  email           text        NOT NULL DEFAULT '',
+  message         text        NOT NULL DEFAULT '',
+  source          text        NOT NULL DEFAULT 'form' CHECK (source IN ('form', 'chat')),
+  status          text        NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'closed', 'spam')),
+  admin_note      text        NOT NULL DEFAULT '',
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now(),
+  chat_session_id uuid        REFERENCES chat_sessions (id) ON DELETE SET NULL, -- set when source = 'chat'
   CONSTRAINT inquiries_contact_check CHECK (phone <> '' OR email <> '')
 );
 
 CREATE INDEX inquiries_status_created_at_idx ON inquiries (status, created_at DESC);
 CREATE INDEX inquiries_listing_id_idx ON inquiries (listing_id);
+-- At most one chatbot lead per conversation.
+CREATE UNIQUE INDEX inquiries_chat_session_id_key ON inquiries (chat_session_id) WHERE chat_session_id IS NOT NULL;

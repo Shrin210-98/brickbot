@@ -147,19 +147,20 @@ func (h *InquiriesHandler) Triage(w http.ResponseWriter, r *http.Request) {
 // inquiryRow is the shape shared by db.ListInquiriesRow and db.GetInquiryRow,
 // which sqlc generates as distinct but identical types.
 type inquiryRow struct {
-	ID           pgtype.UUID
-	ListingID    pgtype.UUID
-	Name         string
-	Phone        string
-	Email        string
-	Message      string
-	Source       string
-	Status       string
-	AdminNote    string
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
-	ListingSlug  *string
-	ListingTitle *string
+	ID            pgtype.UUID
+	ListingID     pgtype.UUID
+	Name          string
+	Phone         string
+	Email         string
+	Message       string
+	Source        string
+	Status        string
+	AdminNote     string
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+	ChatSessionID pgtype.UUID
+	ListingSlug   *string
+	ListingTitle  *string
 }
 
 func toInquiry(r inquiryRow) inquiryDTO {

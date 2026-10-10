@@ -8,18 +8,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Inquiry struct {
-	ID        pgtype.UUID
-	ListingID pgtype.UUID
-	Name      string
-	Phone     string
-	Email     string
-	Message   string
-	Source    string
-	Status    string
-	AdminNote string
+type ChatMessage struct {
+	ID        int64
+	SessionID pgtype.UUID
+	Role      string
+	Content   []byte
 	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+}
+
+type ChatSession struct {
+	ID        pgtype.UUID
+	VisitorID pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+}
+
+type Inquiry struct {
+	ID            pgtype.UUID
+	ListingID     pgtype.UUID
+	Name          string
+	Phone         string
+	Email         string
+	Message       string
+	Source        string
+	Status        string
+	AdminNote     string
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+	ChatSessionID pgtype.UUID
 }
 
 type Listing struct {
