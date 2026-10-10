@@ -218,7 +218,7 @@ function FeaturedListings() {
     <Section id="listings">
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl/[1.2]">Featured listings</h2>
+          <h2 className="text-3xl/[1.2]">Featured Listings</h2>
           <Button variant="link" nativeButton={false} render={<Link to="/listings" />}>
             See all listings
           </Button>
@@ -293,7 +293,7 @@ export function HomePage() {
       {/* 8c: redesigned contact section */}
       <Section id="contact">
         <div className="mx-auto flex max-w-xl flex-col gap-6">
-          <h2 className="text-3xl/[1.2]">Get in touch</h2>
+          <h2 className="text-3xl/[1.2]">Get in Touch</h2>
           <Card>
             <CardContent>
               <InquiryForm />

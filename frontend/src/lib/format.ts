@@ -52,3 +52,12 @@ export function formatArea(area: number, market: Market): string {
 export function formatDateTime(iso: string, market: Market): string {
   return new Intl.DateTimeFormat(locale(market), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
 }
+
+// Indian mobile numbers (+91 and 10 digits) read as "+91 98765 43210"; anything else is shown as stored.
+export function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '')
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`
+  }
+  return raw
+}

@@ -2,6 +2,7 @@ import { Mail, MessageCircle, Phone } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useProfile } from '@/api/profile'
 import { Button } from '@/components/ui/button'
+import { formatPhone } from '@/lib/format'
 import { whatsappLink } from '@/lib/whatsapp'
 import { NAV_ITEMS, siteName } from './nav'
 
@@ -47,7 +48,7 @@ export function Footer() {
           )}
           {profile?.phone && (
             <a href={`tel:${profile.phone}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary">
-              <Phone className="size-4" /> {profile.phone}
+              <Phone className="size-4" /> {formatPhone(profile.phone)}
             </a>
           )}
           {profile?.email && (
@@ -55,7 +56,6 @@ export function Footer() {
               <Mail className="size-4" /> {profile.email}
             </a>
           )}
-          {profile?.license_no && <p className="text-sm text-muted-foreground">RERA {profile.license_no}</p>}
         </div>
       </div>
 

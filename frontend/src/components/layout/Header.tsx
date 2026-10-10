@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useProfile } from '@/api/profile'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { formatPhone } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { whatsappLink } from '@/lib/whatsapp'
 import { NAV_ITEMS, siteName } from './nav'
@@ -104,7 +105,7 @@ export function Header() {
               {phone && (
                 <div className="px-5">
                   <Button variant="outline" className="h-11 w-full" nativeButton={false} render={<a href={`tel:${phone}`} />}>
-                    <Phone data-icon="inline-start" /> Call {phone}
+                    <Phone data-icon="inline-start" /> Call {formatPhone(phone)}
                   </Button>
                 </div>
               )}
