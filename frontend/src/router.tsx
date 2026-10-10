@@ -1,7 +1,11 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { PublicLayout } from '@/layouts/PublicLayout'
-import { AdminHomePage } from '@/pages/admin/AdminHomePage'
+import { AdminInquiriesPage } from '@/pages/admin/AdminInquiriesPage'
+import { AdminInquiryPage } from '@/pages/admin/AdminInquiryPage'
+import { AdminListingEditPage } from '@/pages/admin/AdminListingEditPage'
+import { AdminListingNewPage } from '@/pages/admin/AdminListingNewPage'
+import { AdminListingsPage } from '@/pages/admin/AdminListingsPage'
 import { LoginPage } from '@/pages/admin/LoginPage'
 import { ContactPage } from '@/pages/ContactPage'
 import { HomePage } from '@/pages/HomePage'
@@ -24,6 +28,13 @@ export const router = createBrowserRouter([
   {
     path: '/admin',
     element: <AdminLayout />,
-    children: [{ index: true, element: <AdminHomePage /> }],
+    children: [
+      { index: true, element: <Navigate to="/admin/inquiries" replace /> },
+      { path: 'inquiries', element: <AdminInquiriesPage /> },
+      { path: 'inquiries/:id', element: <AdminInquiryPage /> },
+      { path: 'listings', element: <AdminListingsPage /> },
+      { path: 'listings/new', element: <AdminListingNewPage /> },
+      { path: 'listings/:id', element: <AdminListingEditPage /> },
+    ],
   },
 ])

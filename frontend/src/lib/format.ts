@@ -1,4 +1,4 @@
-import type { AreaUnit, Profile, PropertyType, Purpose } from '@/types/api'
+import type { AreaUnit, InquiryStatus, ListingStatus, Profile, PropertyType, Purpose } from '@/types/api'
 
 export type Market = Pick<Profile, 'country_code' | 'currency' | 'area_unit'>
 
@@ -14,6 +14,20 @@ export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
   plot: 'Plot',
   commercial: 'Commercial',
   other: 'Other',
+}
+
+export const LISTING_STATUS_LABELS: Record<ListingStatus, string> = {
+  draft: 'Draft',
+  active: 'Active',
+  sold: 'Sold',
+  rented: 'Rented',
+}
+
+export const INQUIRY_STATUS_LABELS: Record<InquiryStatus, string> = {
+  new: 'New',
+  contacted: 'Contacted',
+  closed: 'Closed',
+  spam: 'Spam',
 }
 
 const AREA_UNIT_LABELS: Record<AreaUnit, string> = { sqft: 'sq ft', sqm: 'm²' }
@@ -33,4 +47,8 @@ export function formatPrice(price: number, purpose: Purpose, market: Market): st
 
 export function formatArea(area: number, market: Market): string {
   return `${new Intl.NumberFormat(locale(market)).format(area)} ${AREA_UNIT_LABELS[market.area_unit]}`
+}
+
+export function formatDateTime(iso: string, market: Market): string {
+  return new Intl.DateTimeFormat(locale(market), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
 }
