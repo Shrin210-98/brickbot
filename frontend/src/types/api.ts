@@ -205,3 +205,42 @@ export interface ListingQuery {
   sort?: ListingSort
   page: number
 }
+
+// POST /api/chat/sessions
+export interface ChatSessionCreate {
+  visitor_id: string
+}
+
+export interface ChatSession {
+  id: string
+  created_at: string
+}
+
+// GET /api/chat/sessions/{id}/messages
+export interface ChatLine {
+  id: number
+  role: 'user' | 'assistant'
+  text: string
+  created_at: string
+}
+
+export interface ChatTranscript {
+  items: ChatLine[]
+}
+
+// POST /api/chat/sessions/{id}/messages (reply streams as SSE)
+export interface ChatMessageCreate {
+  visitor_id: string
+  content: string
+}
+
+export type ChatToolName = 'search_listings' | 'get_listing' | 'create_lead'
+
+// One SSE event of a chat reply (docs/chatbot.md → SSE contract).
+export type ChatStreamEvent =
+  | { event: 'delta'; data: { text: string } }
+  | { event: 'tool'; data: { name: ChatToolName } }
+  | { event: 'listings'; data: { items: ListingSummary[] } }
+  | { event: 'lead_created'; data: { inquiry_id: string } }
+  | { event: 'done'; data: Record<string, never> }
+  | { event: 'error'; data: { code: string; message: string } }
