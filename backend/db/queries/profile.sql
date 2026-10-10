@@ -19,3 +19,18 @@ RETURNING *;
 
 -- name: UpdateAdminPasswordHash :exec
 UPDATE salesman_profile SET admin_password_hash = $1, updated_at = now() WHERE id = 1;
+
+-- Seed only: fills the marketing fields that are still empty, never overwrites them.
+-- name: FillProfileMarketing :exec
+UPDATE salesman_profile
+SET tagline          = COALESCE(NULLIF(tagline, ''), sqlc.narg('tagline')),
+    headline         = COALESCE(NULLIF(headline, ''), sqlc.narg('headline')),
+    license_no       = COALESCE(NULLIF(license_no, ''), sqlc.narg('license_no')),
+    agency_name      = COALESCE(NULLIF(agency_name, ''), sqlc.narg('agency_name')),
+    years_experience = COALESCE(years_experience, sqlc.narg('years_experience')),
+    deals_closed     = COALESCE(deals_closed, sqlc.narg('deals_closed')),
+    specialties      = CASE WHEN cardinality(specialties) = 0 THEN sqlc.arg('specialties')::text[] ELSE specialties END,
+    process_steps    = CASE WHEN process_steps = '[]'::jsonb THEN sqlc.arg('process_steps')::jsonb ELSE process_steps END,
+    socials          = CASE WHEN socials = '{}'::jsonb THEN sqlc.arg('socials')::jsonb ELSE socials END,
+    updated_at       = now()
+WHERE id = 1;

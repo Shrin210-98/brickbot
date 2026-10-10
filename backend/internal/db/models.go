@@ -88,6 +88,10 @@ type SalesmanProfile struct {
 	DealsClosed       *int32
 	Specialties       []string
 	ProcessSteps      []byte
+	AgencyName        *string
+	Headline          *string
+	LicenseNo         *string
+	Socials           []byte
 }
 
 type Testimonial struct {

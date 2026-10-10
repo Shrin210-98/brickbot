@@ -23,7 +23,11 @@ CREATE TABLE salesman_profile (
   years_experience    smallint,
   deals_closed        integer,
   specialties         text[]      NOT NULL DEFAULT '{}',
-  process_steps       jsonb       NOT NULL DEFAULT '[]'    -- [{"title": "...", "description": "..."}, ...]
+  process_steps       jsonb       NOT NULL DEFAULT '[]',   -- [{"title": "...", "description": "..."}, ...]
+  agency_name         text,                                -- site name; the API falls back to "BrickBot"
+  headline            text,
+  license_no          text,                                -- RERA registration number
+  socials             jsonb       NOT NULL DEFAULT '{}'    -- {"instagram": "https://…", …}
 );
 
 CREATE TABLE listings (

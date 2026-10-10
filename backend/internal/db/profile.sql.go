@@ -41,6 +41,49 @@ func (q *Queries) CreateProfileIfMissing(ctx context.Context, arg CreateProfileI
 	return err
 }
 
+const fillProfileMarketing = `-- name: FillProfileMarketing :exec
+UPDATE salesman_profile
+SET tagline          = COALESCE(NULLIF(tagline, ''), $1),
+    headline         = COALESCE(NULLIF(headline, ''), $2),
+    license_no       = COALESCE(NULLIF(license_no, ''), $3),
+    agency_name      = COALESCE(NULLIF(agency_name, ''), $4),
+    years_experience = COALESCE(years_experience, $5),
+    deals_closed     = COALESCE(deals_closed, $6),
+    specialties      = CASE WHEN cardinality(specialties) = 0 THEN $7::text[] ELSE specialties END,
+    process_steps    = CASE WHEN process_steps = '[]'::jsonb THEN $8::jsonb ELSE process_steps END,
+    socials          = CASE WHEN socials = '{}'::jsonb THEN $9::jsonb ELSE socials END,
+    updated_at       = now()
+WHERE id = 1
+`
+
+type FillProfileMarketingParams struct {
+	Tagline         *string
+	Headline        *string
+	LicenseNo       *string
+	AgencyName      *string
+	YearsExperience *int16
+	DealsClosed     *int32
+	Specialties     []string
+	ProcessSteps    []byte
+	Socials         []byte
+}
+
+// Seed only: fills the marketing fields that are still empty, never overwrites them.
+func (q *Queries) FillProfileMarketing(ctx context.Context, arg FillProfileMarketingParams) error {
+	_, err := q.db.Exec(ctx, fillProfileMarketing,
+		arg.Tagline,
+		arg.Headline,
+		arg.LicenseNo,
+		arg.AgencyName,
+		arg.YearsExperience,
+		arg.DealsClosed,
+		arg.Specialties,
+		arg.ProcessSteps,
+		arg.Socials,
+	)
+	return err
+}
+
 const getAdminCredentials = `-- name: GetAdminCredentials :one
 SELECT admin_email, admin_password_hash FROM salesman_profile WHERE id = 1
 `
@@ -58,7 +101,7 @@ func (q *Queries) GetAdminCredentials(ctx context.Context) (GetAdminCredentialsR
 }
 
 const getProfile = `-- name: GetProfile :one
-SELECT id, name, phone, whatsapp_number, email, bio, service_areas, photo_path, country_code, currency, area_unit, admin_email, admin_password_hash, created_at, updated_at, tagline, years_experience, deals_closed, specialties, process_steps FROM salesman_profile WHERE id = 1
+SELECT id, name, phone, whatsapp_number, email, bio, service_areas, photo_path, country_code, currency, area_unit, admin_email, admin_password_hash, created_at, updated_at, tagline, years_experience, deals_closed, specialties, process_steps, agency_name, headline, license_no, socials FROM salesman_profile WHERE id = 1
 `
 
 func (q *Queries) GetProfile(ctx context.Context) (SalesmanProfile, error) {
@@ -85,6 +128,10 @@ func (q *Queries) GetProfile(ctx context.Context) (SalesmanProfile, error) {
 		&i.DealsClosed,
 		&i.Specialties,
 		&i.ProcessSteps,
+		&i.AgencyName,
+		&i.Headline,
+		&i.LicenseNo,
+		&i.Socials,
 	)
 	return i, err
 }
@@ -103,7 +150,7 @@ UPDATE salesman_profile
 SET name = $1, phone = $2, whatsapp_number = $3, email = $4, bio = $5, service_areas = $6,
     photo_path = $7, country_code = $8, currency = $9, area_unit = $10, updated_at = now()
 WHERE id = 1
-RETURNING id, name, phone, whatsapp_number, email, bio, service_areas, photo_path, country_code, currency, area_unit, admin_email, admin_password_hash, created_at, updated_at, tagline, years_experience, deals_closed, specialties, process_steps
+RETURNING id, name, phone, whatsapp_number, email, bio, service_areas, photo_path, country_code, currency, area_unit, admin_email, admin_password_hash, created_at, updated_at, tagline, years_experience, deals_closed, specialties, process_steps, agency_name, headline, license_no, socials
 `
 
 type UpdateProfileParams struct {
@@ -154,6 +201,10 @@ func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) (S
 		&i.DealsClosed,
 		&i.Specialties,
 		&i.ProcessSteps,
+		&i.AgencyName,
+		&i.Headline,
+		&i.LicenseNo,
+		&i.Socials,
 	)
 	return i, err
 }
