@@ -4,9 +4,9 @@ import { ADMIN_PAGE_SIZE, useAdminListings, useDeleteListing } from '@/api/admin
 import { useMarket } from '@/api/profile'
 import { ConfirmDelete } from '@/components/admin/ConfirmDelete'
 import { StatusFilter } from '@/components/admin/StatusFilter'
+import { ApiErrorState } from '@/components/errors/ApiErrorState'
 import { EmptyState } from '@/components/listings/EmptyState'
 import { ListingPagination } from '@/components/listings/ListingPagination'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -44,10 +44,7 @@ export function AdminListingsPage() {
       />
 
       {listings.isError ? (
-        <Alert variant="destructive">
-          <AlertTitle>Couldn't load listings</AlertTitle>
-          <AlertDescription>{listings.error.message}</AlertDescription>
-        </Alert>
+        <ApiErrorState error={listings.error} title="Couldn't load listings" onRetry={() => void listings.refetch()} />
       ) : listings.isPending ? (
         <Skeleton className="h-64 w-full" />
       ) : listings.data.items.length === 0 ? (

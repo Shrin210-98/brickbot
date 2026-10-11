@@ -4,8 +4,8 @@ import { useAdminListing, useDeleteListing, useUpdateListing } from '@/api/admin
 import { ConfirmDelete } from '@/components/admin/ConfirmDelete'
 import { ListingForm } from '@/components/admin/ListingForm'
 import { MediaManager } from '@/components/admin/MediaManager'
+import { ApiErrorState } from '@/components/errors/ApiErrorState'
 import { EmptyState } from '@/components/listings/EmptyState'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,7 +23,7 @@ function BackLink() {
 
 export function AdminListingEditPage() {
   const { id = '' } = useParams()
-  const { data: listing, isPending, error } = useAdminListing(id)
+  const { data: listing, isPending, error, refetch } = useAdminListing(id)
   const update = useUpdateListing(id)
   const remove = useDeleteListing()
   const navigate = useNavigate()
@@ -44,10 +44,7 @@ export function AdminListingEditPage() {
         {isNotFound(error) ? (
           <EmptyState title="Listing not found" description="It may have been deleted." />
         ) : (
-          <Alert variant="destructive">
-            <AlertTitle>Couldn't load this listing</AlertTitle>
-            <AlertDescription>{error.message}</AlertDescription>
-          </Alert>
+          <ApiErrorState error={error} title="Couldn't load this listing" onRetry={() => void refetch()} />
         )}
       </div>
     )

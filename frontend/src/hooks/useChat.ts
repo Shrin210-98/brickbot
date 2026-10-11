@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { streamChatMessage, useChatTranscript, useCreateChatSession } from '@/api/chat'
-import { ApiError, isNotFound } from '@/lib/api'
+import { ApiError, isNetworkError, isNotFound } from '@/lib/api'
 import type { ChatLine, ChatSession, ChatToolName, ListingSummary } from '@/types/api'
 
 export interface ChatMessage {
@@ -119,7 +119,7 @@ export function hasMessages(state: ChatState): boolean {
 
 function errorMessage(err: unknown): string {
   if (err instanceof ApiError) return err.message
-  if (err instanceof TypeError) return "Couldn't reach the server. Check your connection and try again."
+  if (isNetworkError(err)) return "Couldn't reach the server. Check your connection and try again."
   return 'Something went wrong. Please try again.'
 }
 

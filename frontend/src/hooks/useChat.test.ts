@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createChatSession } from '@/api/chat'
-import { ApiError } from '@/lib/api'
+import { API_TIMEOUT_MS, ApiError } from '@/lib/api'
 import { streamSSE } from '@/lib/sse'
 import { createChat, getVisitorId, hasMessages, saveSession } from '@/hooks/useChat'
 import type { ListingSummary } from '@/types/api'
@@ -353,6 +353,39 @@ describe('clearing the conversation', () => {
 })
 
 describe('streamSSE', () => {
+  it('times out while connecting, but not once the stream has started', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>(
+          (_input, init) => new Promise((_res, reject) => init?.signal?.addEventListener('abort', () => reject(init.signal?.reason))),
+        ),
+      )
+      const hung = streamSSE('/x', {}, { onEvent: () => {} }).catch((e: unknown) => e)
+      await vi.advanceTimersByTimeAsync(API_TIMEOUT_MS)
+      expect(((await hung) as DOMException).name).toBe('TimeoutError')
+
+      // The stream errors if its request signal aborts, as a real body would.
+      let s!: Stream
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>(async (_input, init) => {
+          s = sseResponse(init?.signal)
+          return s.response
+        }),
+      )
+      const events: string[] = []
+      const done = streamSSE('/x', {}, { onEvent: (e) => events.push(e) })
+      await vi.advanceTimersByTimeAsync(API_TIMEOUT_MS * 3)
+      s.finish()
+      await done
+      expect(events).toEqual(['done'])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('parses events split across chunks, CRLF line ends and multi-line data', async () => {
     const s = sseResponse()
     vi.stubGlobal('fetch', vi.fn<typeof fetch>(async () => s.response))

@@ -4,9 +4,9 @@ import { ADMIN_PAGE_SIZE } from '@/api/admin-listings'
 import { useMarket } from '@/api/profile'
 import { InquiryStatusBadge } from '@/components/admin/InquiryStatusBadge'
 import { StatusFilter } from '@/components/admin/StatusFilter'
+import { ApiErrorState } from '@/components/errors/ApiErrorState'
 import { EmptyState } from '@/components/listings/EmptyState'
 import { ListingPagination } from '@/components/listings/ListingPagination'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { INQUIRY_STATUSES, parseAdminQuery, toAdminSearchParams } from '@/lib/admin-query'
@@ -37,10 +37,7 @@ export function AdminInquiriesPage() {
       />
 
       {inquiries.isError ? (
-        <Alert variant="destructive">
-          <AlertTitle>Couldn't load inquiries</AlertTitle>
-          <AlertDescription>{inquiries.error.message}</AlertDescription>
-        </Alert>
+        <ApiErrorState error={inquiries.error} title="Couldn't load inquiries" onRetry={() => void inquiries.refetch()} />
       ) : inquiries.isPending ? (
         <Skeleton className="h-64 w-full" />
       ) : inquiries.data.items.length === 0 ? (

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { ApiError } from '@/lib/api'
+import { ApiError, isNetworkError } from '@/lib/api'
 import { applyFieldErrors } from '@/lib/form-errors'
 import {
   EMPTY_INQUIRY,
@@ -22,6 +22,9 @@ function serverErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status === 404) return 'This listing is no longer available.'
     if (err.status === 429) return 'Too many inquiries sent. Please try again in a minute.'
+  }
+  if (isNetworkError(err) || (err instanceof ApiError && err.status >= 500)) {
+    return "Can't reach the server. Your details are still here, so please try again."
   }
   return "Your inquiry couldn't be sent. Please try again."
 }

@@ -1,7 +1,7 @@
 import { Building2, LogOut } from 'lucide-react'
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useLogout, useMe } from '@/api/auth'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { ApiErrorState } from '@/components/errors/ApiErrorState'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -11,7 +11,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 // The only admin auth guard: every /admin page renders inside it.
 export function AdminLayout() {
-  const { data: me, isPending, error } = useMe()
+  const { data: me, isPending, error, refetch } = useMe()
   const logout = useLogout()
   const location = useLocation()
 
@@ -27,10 +27,7 @@ export function AdminLayout() {
   if (error) {
     return (
       <div className="mx-auto max-w-xl px-4 py-16">
-        <Alert variant="destructive">
-          <AlertTitle>Couldn't check your session</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
+        <ApiErrorState error={error} title="Couldn't check your session" onRetry={() => void refetch()} />
       </div>
     )
   }

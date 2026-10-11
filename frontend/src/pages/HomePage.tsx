@@ -6,11 +6,11 @@ import { useProfile } from '@/api/profile'
 import { images } from '@/assets/images'
 import { ListingsCarousel } from '@/components/blocks/ListingsCarousel'
 import { TestimonialsCarousel } from '@/components/blocks/TestimonialsCarousel'
+import { ApiErrorState } from '@/components/errors/ApiErrorState'
 import { InquiryForm } from '@/components/inquiry/InquiryForm'
 import { siteName } from '@/components/layout/nav'
 import { EmptyState } from '@/components/listings/EmptyState'
 import { ListingGrid } from '@/components/listings/ListingGrid'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -224,10 +224,11 @@ function FeaturedListings() {
           </Button>
         </div>
         {featured.isError ? (
-          <Alert variant="destructive">
-            <AlertTitle>Couldn't load featured listings</AlertTitle>
-            <AlertDescription>{featured.error.message}</AlertDescription>
-          </Alert>
+          <ApiErrorState
+            error={featured.error}
+            title="Couldn't load featured listings"
+            onRetry={() => void featured.refetch()}
+          />
         ) : featured.isPending || featured.data.items.length === 0 ? (
           <ListingGrid
             items={featured.data?.items}

@@ -2,18 +2,18 @@ import { useState, type ReactNode } from 'react'
 import { SlidersHorizontal } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { LISTINGS_PAGE_SIZE, useListings } from '@/api/listings'
+import { ApiErrorState } from '@/components/errors/ApiErrorState'
 import { EmptyState } from '@/components/listings/EmptyState'
 import { ListingFilters } from '@/components/listings/ListingFilters'
 import { ListingGrid } from '@/components/listings/ListingGrid'
 import { ListingPagination } from '@/components/listings/ListingPagination'
 import { OfflineNotice } from '@/components/OfflineNotice'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { isOffline } from '@/lib/api'
+import { isBrowserOffline } from '@/lib/api'
 import { hasActiveFilters, parseListingQuery, toSearchParams } from '@/lib/listing-filters'
 import type { ListingQuery, ListingSort } from '@/types/api'
 
@@ -97,13 +97,10 @@ export function ListingsPage() {
         </Select>
       </div>
 
-      {listings.isError && isOffline(listings.error) ? (
+      {listings.isError && isBrowserOffline() ? (
         <OfflineNotice />
       ) : listings.isError ? (
-        <Alert variant="destructive">
-          <AlertTitle>Couldn't load listings</AlertTitle>
-          <AlertDescription>{listings.error.message}</AlertDescription>
-        </Alert>
+        <ApiErrorState error={listings.error} title="Couldn't load listings" onRetry={() => void listings.refetch()} />
       ) : (
         <ListingGrid
           items={listings.data?.items}

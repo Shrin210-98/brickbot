@@ -2,17 +2,17 @@ import { ArrowLeft, Bath, BedDouble, Building2, MapPin, MessageCircle, Phone, Ru
 import { Link, useParams } from 'react-router-dom'
 import { useListing } from '@/api/listings'
 import { useMarket, useProfile } from '@/api/profile'
+import { ApiErrorState } from '@/components/errors/ApiErrorState'
 import { InquiryForm } from '@/components/inquiry/InquiryForm'
 import { EmptyState } from '@/components/listings/EmptyState'
 import { ListingGallery } from '@/components/listings/ListingGallery'
 import { OfflineNotice } from '@/components/OfflineNotice'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
-import { isNotFound, isOffline } from '@/lib/api'
+import { isBrowserOffline, isNotFound } from '@/lib/api'
 import { formatArea, formatPrice, PROPERTY_TYPE_LABELS, PURPOSE_LABELS } from '@/lib/format'
 import { whatsappLink } from '@/lib/whatsapp'
 import type { ListingDetail } from '@/types/api'
@@ -115,7 +115,7 @@ function Spec({ icon: Icon, label, value }: { icon: typeof BedDouble; label: str
 
 export function ListingDetailPage() {
   const { slug = '' } = useParams()
-  const { data: listing, isPending, error } = useListing(slug)
+  const { data: listing, isPending, error, refetch } = useListing(slug)
   const market = useMarket()
 
   if (isPending) {
@@ -132,7 +132,7 @@ export function ListingDetailPage() {
     return (
       <div className="flex flex-col gap-6">
         <BackLink />
-        {isOffline(error) ? (
+        {isBrowserOffline() ? (
           <OfflineNotice />
         ) : isNotFound(error) ? (
           <EmptyState
@@ -145,10 +145,7 @@ export function ListingDetailPage() {
             }
           />
         ) : (
-          <Alert variant="destructive">
-            <AlertTitle>Couldn't load this listing</AlertTitle>
-            <AlertDescription>{error.message}</AlertDescription>
-          </Alert>
+          <ApiErrorState error={error} title="Couldn't load this listing" onRetry={() => void refetch()} />
         )}
       </div>
     )

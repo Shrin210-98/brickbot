@@ -1,4 +1,4 @@
-import { ApiError } from '@/lib/api'
+import { API_TIMEOUT_MS, ApiError, withDeadline } from '@/lib/api'
 import type { ApiErrorBody } from '@/types/api'
 
 export interface SSEHandlers<TEvent> {
@@ -11,17 +11,25 @@ export interface SSEHandlers<TEvent> {
 // Resolves when the stream ends. Throws ApiError when the server answers with
 // an error before the stream starts or with something that is not a stream,
 // and rethrows network failures, aborts (AbortError) and malformed events.
+// Connecting times out after API_TIMEOUT_MS (TimeoutError); once the stream
+// has started it runs until it ends or handlers.signal aborts it.
 export async function streamSSE<TEvent>(url: string, body: unknown, handlers: SSEHandlers<TEvent>): Promise<void> {
-  const res = await fetch(url, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { Accept: 'text/event-stream', 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: handlers.signal,
-  })
-  if (!res.ok) {
-    const err = (await res.json().catch(() => null)) as ApiErrorBody | null
-    throw new ApiError(res.status, err?.error.code ?? 'internal', err?.error.message ?? res.statusText, err?.error.fields)
+  const deadline = withDeadline(handlers.signal, API_TIMEOUT_MS)
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { Accept: 'text/event-stream', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: deadline.signal,
+    })
+    if (!res.ok) {
+      const err = (await res.json().catch(() => null)) as ApiErrorBody | null
+      throw new ApiError(res.status, err?.error.code ?? 'internal', err?.error.message ?? res.statusText, err?.error.fields)
+    }
+  } finally {
+    deadline.clear()
   }
   if (!res.body || !res.headers.get('Content-Type')?.startsWith('text/event-stream')) {
     await res.body?.cancel()

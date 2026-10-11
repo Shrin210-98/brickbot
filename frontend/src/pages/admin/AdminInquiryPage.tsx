@@ -4,8 +4,8 @@ import { useAdminInquiry } from '@/api/admin-inquiries'
 import { useMarket } from '@/api/profile'
 import { InquiryStatusBadge } from '@/components/admin/InquiryStatusBadge'
 import { InquiryTriageForm } from '@/components/admin/InquiryTriageForm'
+import { ApiErrorState } from '@/components/errors/ApiErrorState'
 import { EmptyState } from '@/components/listings/EmptyState'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,7 +23,7 @@ function BackLink() {
 
 export function AdminInquiryPage() {
   const { id = '' } = useParams()
-  const { data: inquiry, isPending, error } = useAdminInquiry(id)
+  const { data: inquiry, isPending, error, refetch } = useAdminInquiry(id)
   const market = useMarket()
 
   if (isPending) {
@@ -42,10 +42,7 @@ export function AdminInquiryPage() {
         {isNotFound(error) ? (
           <EmptyState title="Inquiry not found" />
         ) : (
-          <Alert variant="destructive">
-            <AlertTitle>Couldn't load this inquiry</AlertTitle>
-            <AlertDescription>{error.message}</AlertDescription>
-          </Alert>
+          <ApiErrorState error={error} title="Couldn't load this inquiry" onRetry={() => void refetch()} />
         )}
       </div>
     )

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, apiFetch, apiPost, apiSend, isOffline } from '@/lib/api'
+import { API_TIMEOUT_MS, ApiError, apiFetch, apiPost, apiSend, isNetworkError, isOffline } from '@/lib/api'
 
 function mockFetch(res: Response) {
   const fn = vi.fn<typeof fetch>(async () => res)
@@ -7,7 +7,20 @@ function mockFetch(res: Response) {
   return fn
 }
 
+// A fetch that never answers, and rejects with the abort reason like a real one.
+function mockHangingFetch() {
+  const fn = vi.fn<typeof fetch>(
+    (_input, init) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(init.signal?.reason))
+      }),
+  )
+  vi.stubGlobal('fetch', fn)
+  return fn
+}
+
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
@@ -80,9 +93,33 @@ describe('apiSend', () => {
   })
 })
 
+describe('apiFetch deadline', () => {
+  it('rejects with a TimeoutError when the server never answers', async () => {
+    vi.useFakeTimers()
+    mockHangingFetch()
+    const err = apiFetch('/api/listings').catch((e: unknown) => e)
+    await vi.advanceTimersByTimeAsync(API_TIMEOUT_MS)
+    const e = await err
+    expect(e).toBeInstanceOf(DOMException)
+    expect((e as DOMException).name).toBe('TimeoutError')
+    expect(isNetworkError(e)).toBe(true)
+  })
+
+  it("still aborts with the caller's signal, keeping its reason", async () => {
+    mockHangingFetch()
+    const ctrl = new AbortController()
+    const err = apiFetch('/api/listings', { signal: ctrl.signal }).catch((e: unknown) => e)
+    ctrl.abort()
+    expect(((await err) as DOMException).name).toBe('AbortError')
+  })
+})
+
 describe('isOffline', () => {
   it('is true for a fetch that got no response', () => {
     expect(isOffline(new TypeError('Failed to fetch'))).toBe(true)
+  })
+  it('is true for a timeout', () => {
+    expect(isOffline(new DOMException('The request timed out', 'TimeoutError'))).toBe(true)
   })
   it('is false for an HTTP error while online', () => {
     expect(isOffline(new ApiError(500, 'internal', 'boom'))).toBe(false)

@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { apiErrorMessage } from '@/lib/error-copy'
 
 interface ConfirmDeleteProps {
   trigger: ReactElement
@@ -32,7 +33,7 @@ export function ConfirmDelete({ trigger, title, description, confirmLabel = 'Del
       await onConfirm()
       setOpen(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
+      setError(apiErrorMessage(err))
     } finally {
       setPending(false)
     }
