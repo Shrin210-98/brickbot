@@ -116,7 +116,7 @@ export function HomeEnquiryForm() {
           <FormField id={`${id}-message`} label="Message" error={errors.message?.message}>
             <textarea
               id={`${id}-message`}
-              rows={3}
+              rows={2}
               className={cn(FIELD, 'resize-y')}
               {...invalid('message')}
               {...register('message')}
