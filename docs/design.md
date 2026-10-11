@@ -70,3 +70,12 @@ Base scale, set on bare elements in `@layer base`. Utility classes override it.
 - Numbers that sell (years of experience, deals closed) use Fraunces at display size.
 - Photos: `rounded-lg object-cover` with a fixed aspect ratio (`aspect-[4/3]` for listings, `aspect-square` for people).
 - `src/components/ui/**` stays generated. Restyle through tokens or the `className` at the call site, never by editing the files.
+
+## Mobile & PWA
+BrickBot installs as a standalone web app (no native wrapper). Setup, cache rules and testing are in `docs/pwa.md`.
+
+- **Manifest** (`frontend/public/manifest.webmanifest`): name "BrickBot Realty", short name "BrickBot", `start_url`/`scope` `/`, `display: standalone`, portrait, `theme_color` #C96F4A (primary), `background_color` #FAF7F2 (background). Icons are 192, 512 and a 512 maskable, plus a 180 `apple-touch-icon`, all rendered from `favicon.svg`.
+- **Cache strategy**: the app shell is precached. Profile and list endpoints are stale-while-revalidate (1h and 5m), listing details are network-first with a 24h fallback, and images are cache-first for 7d. Chat, admin, auth, inquiries and every non-GET request are never cached. When an uncached page is opened offline, it shows `OfflineNotice` (the `/offline` page).
+- **Install UX**: Chrome/Android gets an "Install app" control: a ghost icon in the header from `md`, and a text button at the bottom of the mobile Sheet menu. It uses the captured `beforeinstallprompt`. On iOS Safari, the control shows "Add to Home Screen: tap Share, then 'Add to Home Screen'" instead. The control is hidden when the app is installed (`display-mode: standalone`), and for 30 days after the visitor declines the prompt, taps "Not now" or taps "Got it". Nothing opens on its own.
+- **Floating buttons (strategy b)**: the chat launcher is the only floating button. WhatsApp is in the header, the hero, the chat panel header and, on listing pages, the bottom bar. Below `lg`, the listing detail page pins a WhatsApp + Call bar (`data-bottom-bar`) to the bottom; the launcher moves up above it, and the layout pads itself so the bar doesn't cover the footer.
+- **Phones**: tap targets are at least 44px below `md` (the `h-11 md:h-8` pattern at call sites; `components/ui` stays unedited). Text fields use 16px text so iOS doesn't zoom on focus. The viewport is `viewport-fit=cover`, and the fixed bottom bar, the chat launcher, the chat input and the filter sheet footer add `env(safe-area-inset-*)`. Listing filters open in a bottom Sheet below `md`.

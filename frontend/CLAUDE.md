@@ -24,7 +24,7 @@ TanStack Query, react-router-dom v6, react-hook-form + zod, Vitest.
 - `src/lib/api.ts`: fetch wrapper (`credentials: 'include'`, throws `ApiError{status, code, fields}`).
 - `src/lib/sse.ts`: POST stream parser. `src/lib/whatsapp.ts`: wa.me link builder. `src/lib/format.ts`: price/area.
 - `src/api/*`: TanStack Query hooks. **All server state goes through these. No `fetch` inside components.**
-- `src/layouts/`: `PublicLayout` (Header, Footer, the WhatsApp button and chat launcher) and `AdminLayout` (auth guard via `/api/auth/me`).
+- `src/layouts/`: `PublicLayout` (Header, Footer and the chat launcher, the only floating button) and `AdminLayout` (auth guard via `/api/auth/me`).
 - `src/pages/`, `src/components/{layout,listings,inquiry,chat,admin,whatsapp}/`, `src/components/ui/` (shadcn, generated).
 
 ## Forms
@@ -47,5 +47,8 @@ TanStack Query, react-router-dom v6, react-hook-form + zod, Vitest.
   in the same change as backend JSON changes.
 - Tailwind v4 uses `@import "tailwindcss"` in `src/index.css` + Vite plugin.
   Do NOT add `tailwind.config.ts`.
+- PWA: the service worker exists only in builds (`vite build` + `vite preview`). Cache rules live in
+  `vite.config.ts` and are documented in `docs/pwa.md`. Keep both in sync, and never cache chat, admin, auth or inquiries.
+- Phone tap targets are ≥44px: size up at the call site below `md` (`h-11 md:h-8`), never in `components/ui`.
 - Admin route guard lives in `AdminLayout` only (`/api/auth/me` → redirect).
   Do not duplicate the check in pages.
