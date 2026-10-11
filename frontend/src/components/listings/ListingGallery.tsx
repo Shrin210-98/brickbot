@@ -2,6 +2,7 @@ import { Building2 } from 'lucide-react'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
 import type { ListingMedia } from '@/types/api'
 
+// Embla handles swipe on touch screens; the arrows are for mouse and keyboard.
 export function ListingGallery({ media, title }: { media: ListingMedia[]; title: string }) {
   if (media.length === 0) {
     return (
@@ -33,8 +34,8 @@ export function ListingGallery({ media, title }: { media: ListingMedia[]; title:
       </CarouselContent>
       {media.length > 1 && (
         <>
-          <CarouselPrevious className="left-3" />
-          <CarouselNext className="right-3" />
+          <CarouselPrevious className="left-3 size-11 sm:size-8" />
+          <CarouselNext className="right-3 size-11 sm:size-8" />
         </>
       )}
     </Carousel>

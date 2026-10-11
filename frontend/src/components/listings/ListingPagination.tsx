@@ -36,7 +36,7 @@ export function ListingPagination({ page, pageCount, hrefFor, onPageChange }: Li
       <PaginationContent>
         {page > 1 && (
           <PaginationItem>
-            <PaginationPrevious href={hrefFor(page - 1)} onClick={go(page - 1)} />
+            <PaginationPrevious className="h-11 min-w-11 md:h-8" href={hrefFor(page - 1)} onClick={go(page - 1)} />
           </PaginationItem>
         )}
         {pageWindow(page, pageCount).map((p, i) =>
@@ -46,7 +46,7 @@ export function ListingPagination({ page, pageCount, hrefFor, onPageChange }: Li
             </PaginationItem>
           ) : (
             <PaginationItem key={p}>
-              <PaginationLink href={hrefFor(p)} isActive={p === page} onClick={go(p)}>
+              <PaginationLink className="size-11 md:size-8" href={hrefFor(p)} isActive={p === page} onClick={go(p)}>
                 {p}
               </PaginationLink>
             </PaginationItem>
@@ -54,7 +54,7 @@ export function ListingPagination({ page, pageCount, hrefFor, onPageChange }: Li
         )}
         {page < pageCount && (
           <PaginationItem>
-            <PaginationNext href={hrefFor(page + 1)} onClick={go(page + 1)} />
+            <PaginationNext className="h-11 min-w-11 md:h-8" href={hrefFor(page + 1)} onClick={go(page + 1)} />
           </PaginationItem>
         )}
       </PaginationContent>

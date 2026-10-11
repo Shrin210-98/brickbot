@@ -37,7 +37,7 @@ function FilterSelect({
         value={value ?? ANY}
         onValueChange={(v) => onChange(v === ANY || v === null ? undefined : String(v))}
       >
-        <SelectTrigger id={id} className="w-full">
+        <SelectTrigger id={id} className="w-full data-[size=default]:h-11 md:data-[size=default]:h-8">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -95,12 +95,13 @@ export function ListingFilters({ query, onChange }: ListingFiltersProps) {
         <div className="flex gap-2">
           <Input
             id="filter-q"
+            className="h-11 md:h-8"
             value={q}
             maxLength={100}
             placeholder="Title, locality, city…"
             onChange={(e) => setQ(e.target.value)}
           />
-          <Button type="submit">
+          <Button type="submit" className="h-11 md:h-8">
             <Search data-icon="inline-start" /> Search
           </Button>
         </div>
@@ -137,6 +138,7 @@ export function ListingFilters({ query, onChange }: ListingFiltersProps) {
         <Label htmlFor="filter-min-price">Min price</Label>
         <Input
           id="filter-min-price"
+          className="h-11 md:h-8"
           inputMode="numeric"
           value={minPrice}
           placeholder="No min"
@@ -147,6 +149,7 @@ export function ListingFilters({ query, onChange }: ListingFiltersProps) {
         <Label htmlFor="filter-max-price">Max price</Label>
         <Input
           id="filter-max-price"
+          className="h-11 md:h-8"
           inputMode="numeric"
           value={maxPrice}
           placeholder="No max"
@@ -154,7 +157,7 @@ export function ListingFilters({ query, onChange }: ListingFiltersProps) {
         />
       </div>
       <div className="flex items-end sm:col-span-2">
-        <Button type="submit" variant="outline" className="w-full sm:w-auto">
+        <Button type="submit" variant="outline" className="h-11 w-full sm:w-auto md:h-8">
           Apply price
         </Button>
       </div>

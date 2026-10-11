@@ -5,54 +5,99 @@ import { useMarket, useProfile } from '@/api/profile'
 import { InquiryForm } from '@/components/inquiry/InquiryForm'
 import { EmptyState } from '@/components/listings/EmptyState'
 import { ListingGallery } from '@/components/listings/ListingGallery'
+import { OfflineNotice } from '@/components/OfflineNotice'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
-import { isNotFound } from '@/lib/api'
+import { isNotFound, isOffline } from '@/lib/api'
 import { formatArea, formatPrice, PROPERTY_TYPE_LABELS, PURPOSE_LABELS } from '@/lib/format'
 import { whatsappLink } from '@/lib/whatsapp'
 import type { ListingDetail } from '@/types/api'
 
 function BackLink() {
   return (
-    <Button variant="ghost" className="self-start" nativeButton={false} render={<Link to="/listings" />}>
+    <Button variant="ghost" className="h-11 self-start" nativeButton={false} render={<Link to="/listings" />}>
       <ArrowLeft data-icon="inline-start" /> All listings
     </Button>
   )
 }
 
-function ContactCard({ listing }: { listing: ListingDetail }) {
+// WhatsApp (with the listing in the message) and phone links, or null when
+// neither is configured.
+function useContactLinks(listing: ListingDetail) {
   const { data: profile } = useProfile()
   if (!profile) return null
-
   const message = `Hi ${profile.full_name}, I'm interested in "${listing.title}" (${window.location.origin}/listings/${listing.slug}).`
   const whatsapp = whatsappLink(profile.whatsapp_number, message)
   if (!whatsapp && !profile.phone) return null
+  return { name: profile.full_name, whatsapp, phone: profile.phone }
+}
+
+function ContactCard({ listing }: { listing: ListingDetail }) {
+  const links = useContactLinks(listing)
+  if (!links) return null
+  const { name, whatsapp, phone } = links
 
   return (
     <Card>
       <CardContent className="flex flex-col gap-3">
         <p className="font-medium">Interested in this property?</p>
-        <p className="text-sm text-muted-foreground">Contact {profile.full_name} directly.</p>
+        <p className="text-sm text-muted-foreground">Contact {name} directly.</p>
         {whatsapp && (
           <Button
-            className="w-full bg-[#25D366] text-white hover:bg-[#1ebe5b]"
+            className="h-11 w-full bg-[#25D366] text-white hover:bg-[#1ebe5b]"
             nativeButton={false}
             render={<a href={whatsapp} target="_blank" rel="noopener noreferrer" />}
           >
             <MessageCircle data-icon="inline-start" /> Chat on WhatsApp
           </Button>
         )}
-        {profile.phone && (
-          <Button variant="outline" className="w-full" nativeButton={false} render={<a href={`tel:${profile.phone}`} />}>
-            <Phone data-icon="inline-start" /> {profile.phone}
+        {phone && (
+          <Button variant="outline" className="h-11 w-full" nativeButton={false} render={<a href={`tel:${phone}`} />}>
+            <Phone data-icon="inline-start" /> {phone}
           </Button>
         )}
       </CardContent>
     </Card>
+  )
+}
+
+// Below lg the contact card sits under the description, so the same actions
+// stay pinned to the bottom of the screen. data-bottom-bar lifts the chat
+// launcher above it and pads the layout so the footer isn't covered.
+function ContactBar({ listing }: { listing: ListingDetail }) {
+  const links = useContactLinks(listing)
+  if (!links) return null
+  const { whatsapp, phone } = links
+
+  return (
+    <div
+      data-bottom-bar
+      className="fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t bg-background/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
+    >
+      {whatsapp && (
+        <Button
+          className="h-11 flex-1 bg-[#25D366] text-base text-white hover:bg-[#1ebe5b]"
+          nativeButton={false}
+          render={<a href={whatsapp} target="_blank" rel="noopener noreferrer" />}
+        >
+          <MessageCircle data-icon="inline-start" /> WhatsApp
+        </Button>
+      )}
+      {phone && (
+        <Button
+          variant="outline"
+          className="h-11 flex-1 text-base"
+          nativeButton={false}
+          render={<a href={`tel:${phone}`} />}
+        >
+          <Phone data-icon="inline-start" /> Call
+        </Button>
+      )}
+    </div>
   )
 }
 
@@ -87,7 +132,9 @@ export function ListingDetailPage() {
     return (
       <div className="flex flex-col gap-6">
         <BackLink />
-        {isNotFound(error) ? (
+        {isOffline(error) ? (
+          <OfflineNotice />
+        ) : isNotFound(error) ? (
           <EmptyState
             title="Listing not found"
             description="This property may have been sold, rented or removed."
@@ -166,6 +213,7 @@ export function ListingDetailPage() {
           </Card>
         </aside>
       </div>
+      <ContactBar listing={listing} />
     </div>
   )
 }

@@ -52,3 +52,9 @@ export function apiPost<T>(path: string, body?: unknown): Promise<T> {
 export function isNotFound(err: unknown): boolean {
   return err instanceof ApiError && err.status === 404
 }
+
+// fetch rejects with a TypeError when no response arrives at all, and the
+// service worker had nothing cached. navigator.onLine alone isn't reliable.
+export function isOffline(err: unknown): boolean {
+  return err instanceof TypeError || (typeof navigator !== 'undefined' && navigator.onLine === false)
+}

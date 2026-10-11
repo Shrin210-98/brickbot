@@ -12,6 +12,7 @@ import { HomePage } from '@/pages/HomePage'
 import { ListingDetailPage } from '@/pages/ListingDetailPage'
 import { ListingsPage } from '@/pages/ListingsPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { OfflinePage } from '@/pages/OfflinePage'
 
 export const router = createBrowserRouter([
   {
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
       { path: '/listings', element: <ListingsPage /> },
       { path: '/listings/:slug', element: <ListingDetailPage /> },
       { path: '/contact', element: <ContactPage /> },
+      { path: '/offline', element: <OfflinePage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
