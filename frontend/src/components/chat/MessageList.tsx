@@ -65,7 +65,7 @@ export function MessageList({
             <ul className="flex flex-wrap justify-center gap-2">
               {SUGGESTIONS.map((s) => (
                 <li key={s}>
-                  <Button variant="outline" size="sm" className="rounded-full" disabled={streaming} onClick={() => onSuggest(s)}>
+                  <Button variant="outline" size="sm" className="h-11 rounded-full px-4 sm:h-7 sm:px-2.5" disabled={streaming} onClick={() => onSuggest(s)}>
                     {s}
                   </Button>
                 </li>

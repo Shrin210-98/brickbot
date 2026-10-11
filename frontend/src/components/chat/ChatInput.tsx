@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils'
 
 // Matches the server's limit on `content` (docs/api.md).
 const MAX_LENGTH = 2000
-// About four rows of text-sm before the textarea scrolls.
+// About four rows before the textarea scrolls. Text is 16px on phones so iOS
+// doesn't zoom in on focus.
 const MAX_HEIGHT_PX = 112
 
 export function ChatInput({
@@ -40,7 +41,7 @@ export function ChatInput({
 
   return (
     <form
-      className="flex items-end gap-2 border-t p-3"
+      className="flex items-end gap-2 border-t p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-3"
       onSubmit={(e) => {
         e.preventDefault()
         submit()
@@ -70,7 +71,7 @@ export function ChatInput({
           }
         }}
         className={cn(
-          'min-h-9 flex-1 resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
+          'min-h-11 flex-1 resize-none rounded-md border border-input bg-transparent px-3 py-2 text-base outline-none sm:min-h-9 sm:text-sm placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
           streaming && 'text-muted-foreground',
         )}
       />
@@ -82,6 +83,7 @@ export function ChatInput({
           type="button"
           variant="outline"
           size="icon-lg"
+          className="size-11 sm:size-9"
           aria-label="Stop the reply"
           onClick={() => {
             onStop()
@@ -91,7 +93,7 @@ export function ChatInput({
           <Square className="fill-current" />
         </Button>
       ) : (
-        <Button type="submit" size="icon-lg" aria-label="Send message" disabled={value.trim() === ''}>
+        <Button type="submit" size="icon-lg" className="size-11 sm:size-9" aria-label="Send message" disabled={value.trim() === ''}>
           <SendHorizontal />
         </Button>
       )}

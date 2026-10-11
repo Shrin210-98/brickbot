@@ -1,6 +1,7 @@
 import { useRef, useState, type RefObject } from 'react'
 import { Dialog } from '@base-ui/react/dialog'
-import { RotateCcw, Trash2, XIcon } from 'lucide-react'
+import { MessageCircle, RotateCcw, Trash2, XIcon } from 'lucide-react'
+import { useProfile } from '@/api/profile'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,13 +15,14 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import type { UseChat } from '@/hooks/useChat'
+import { whatsappLink } from '@/lib/whatsapp'
 import { ChatInput } from './ChatInput'
 import { MessageList } from './MessageList'
 
 export const CHAT_PANEL_ID = 'chat-panel'
 
 // The chat window: full screen on phones, a panel above the launcher from sm
-// up. A modal dialog, so focus is trapped, Escape and outside clicks close it,
+// up. Its header links to WhatsApp, so the launcher is the only floating button. A modal dialog, so focus is trapped, Escape and outside clicks close it,
 // and focus returns to returnFocus (the launcher). The conversation lives in
 // chat, owned by ChatFab, so it survives closing the panel and navigating.
 export function ChatPanel({
@@ -35,6 +37,8 @@ export function ChatPanel({
   returnFocus: RefObject<HTMLElement | null>
 }) {
   const input = useRef<HTMLTextAreaElement>(null)
+  const { data: profile } = useProfile()
+  const whatsapp = profile ? whatsappLink(profile.whatsapp_number) : null
   const streaming = chat.status === 'streaming'
   const [confirming, setConfirming] = useState(false)
   // Set on confirm: the Clear button is then disabled, so focus goes to the textarea.
@@ -57,12 +61,25 @@ export function ChatPanel({
           id={CHAT_PANEL_ID}
           initialFocus={input}
           finalFocus={returnFocus}
-          className="fixed inset-0 z-50 flex flex-col bg-background text-foreground shadow-xl transition duration-200 ease-out data-ending-style:translate-y-4 data-ending-style:opacity-0 data-starting-style:translate-y-4 data-starting-style:opacity-0 motion-reduce:transition-none sm:inset-auto sm:right-4 sm:bottom-22 sm:h-[min(40rem,calc(100dvh-7rem))] sm:w-[25rem] sm:overflow-hidden sm:rounded-xl sm:border"
+          className="fixed inset-0 z-50 flex flex-col bg-background text-foreground shadow-xl transition duration-200 ease-out data-ending-style:translate-y-4 data-ending-style:opacity-0 data-starting-style:translate-y-4 data-starting-style:opacity-0 motion-reduce:transition-none max-sm:pt-[env(safe-area-inset-top)] sm:inset-auto sm:right-4 sm:bottom-22 sm:h-[min(40rem,calc(100dvh-7rem))] sm:w-[25rem] sm:overflow-hidden sm:rounded-xl sm:border"
         >
           <header className="flex items-center justify-between gap-2 border-b py-3 pr-2 pl-4">
             {/* TODO: a "Demo" pill once an /api/chat/info endpoint reports demo mode. */}
             <Dialog.Title className="font-display text-lg font-semibold">Chat with BrickBot</Dialog.Title>
             <div className="flex items-center gap-1">
+              {whatsapp && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Chat on WhatsApp instead"
+                  title="Chat on WhatsApp instead"
+                  className="size-11 text-[#25D366] hover:text-[#1ebe5b] sm:size-8"
+                  nativeButton={false}
+                  render={<a href={whatsapp} target="_blank" rel="noopener noreferrer" />}
+                >
+                  <MessageCircle />
+                </Button>
+              )}
               <AlertDialog
                 open={confirming}
                 onOpenChange={(next) => {
@@ -79,7 +96,7 @@ export function ChatPanel({
                       aria-label="Clear conversation"
                       title="Clear conversation"
                       disabled={!canClear}
-                      className="text-muted-foreground"
+                      className="size-11 text-muted-foreground sm:size-8"
                     />
                   }
                 >
@@ -107,7 +124,7 @@ export function ChatPanel({
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-              <Dialog.Close render={<Button variant="ghost" size="icon" aria-label="Close chat" />}>
+              <Dialog.Close render={<Button variant="ghost" size="icon" className="size-11 sm:size-8" aria-label="Close chat" />}>
                 <XIcon />
               </Dialog.Close>
             </div>
