@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://legends-jerry-qualification-locally.trycloudflare.com/api/:path*"
+      "destination": "https://composed-latino-beijing-heavily.trycloudflare.com/api/:path*"
     },
     {
       "source": "/media/:path*",
-      "destination": "https://legends-jerry-qualification-locally.trycloudflare.com/media/:path*"
+      "destination": "https://composed-latino-beijing-heavily.trycloudflare.com/media/:path*"
     },
     {
       "source": "/(.*)",
