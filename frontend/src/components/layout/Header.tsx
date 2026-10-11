@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { formatPhone } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { whatsappLink } from '@/lib/whatsapp'
+import { InstallAppIcon, InstallAppMenuItem } from './InstallApp'
 import { NAV_ITEMS, siteName } from './nav'
 
 const SCROLL_THRESHOLD = 16
@@ -42,7 +43,7 @@ export function Header() {
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
-        <Link to="/" className="font-display text-xl font-semibold tracking-tight">
+        <Link to="/" className="min-w-0 truncate py-2 font-display text-xl font-semibold tracking-tight">
           {brand}
         </Link>
 
@@ -61,13 +62,14 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <InstallAppIcon />
           {whatsapp && (
             <Button
               variant="ghost"
               size="icon"
               aria-label="Chat on WhatsApp"
-              className="text-[#25D366] hover:text-[#1ebe5b]"
+              className="size-11 text-[#25D366] hover:text-[#1ebe5b]"
               nativeButton={false}
               render={<a href={whatsapp} target="_blank" rel="noopener noreferrer" />}
             >
@@ -75,12 +77,12 @@ export function Header() {
             </Button>
           )}
           {phone && (
-            <Button variant="outline" className="hidden sm:inline-flex" nativeButton={false} render={<a href={`tel:${phone}`} />}>
+            <Button variant="outline" className="hidden h-11 sm:inline-flex" nativeButton={false} render={<a href={`tel:${phone}`} />}>
               <Phone data-icon="inline-start" /> Call
             </Button>
           )}
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-            <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu" />}>
+            <SheetTrigger render={<Button variant="ghost" size="icon" className="size-11 md:hidden" aria-label="Open menu" />}>
               <Menu />
             </SheetTrigger>
             <SheetContent side="right">
@@ -109,6 +111,7 @@ export function Header() {
                   </Button>
                 </div>
               )}
+              <InstallAppMenuItem />
             </SheetContent>
           </Sheet>
         </div>
