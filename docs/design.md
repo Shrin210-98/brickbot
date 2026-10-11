@@ -22,7 +22,7 @@ Tokens live in `frontend/src/index.css` (`:root`) as `hsl(...)` values, and Tail
 | `--muted-foreground` | 0 0% 42% | #6B6B6B | Secondary text |
 | `--primary-strong` | 14 50% 36% | #8B4A2F | Darker terracotta for emphasis (`text-primary-strong`, `bg-primary-strong`) |
 | `--accent` | 36 30% 91% | #EFE9DF | Same as secondary: shadcn's menu/select hover and open states |
-| `--sage-green` / `--sage-green-hover` | (hex) | #7D8471 / #6B7259 | The header's WhatsApp glyph (`text-sage-green`). Stored as hex to keep the exact values |
+| `--whatsapp-green` / `--whatsapp-green-hover` | (hex) | #3F6E4E / #335A40 | The header's WhatsApp glyph (`text-whatsapp-green`): a muted forest green, darker than WhatsApp's #25D366 |
 | `--border` | 36 25% 85% | #E5DDD0 | Borders, inputs, dividers |
 | `--ring` | 14 54% 54% | #C96F4A | Focus ring |
 | `--radius` | 0.5rem | | Base radius |
