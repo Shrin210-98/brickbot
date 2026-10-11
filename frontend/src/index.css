@@ -35,8 +35,8 @@
     --color-primary-foreground: var(--primary-foreground);
     --color-primary: var(--primary);
     --color-primary-strong: var(--primary-strong);
-    --color-whatsapp-green: var(--whatsapp-green);
-    --color-whatsapp-green-hover: var(--whatsapp-green-hover);
+    --color-sage-green: var(--sage-green);
+    --color-sage-green-hover: var(--sage-green-hover);
     --color-popover-foreground: var(--popover-foreground);
     --color-popover: var(--popover);
     --color-card-foreground: var(--card-foreground);
@@ -70,10 +70,9 @@
     --accent: hsl(36 30% 91%);
     --accent-foreground: hsl(0 0% 10%);
     --primary-strong: hsl(14 50% 36%);
-    /* The header's WhatsApp glyph: a muted forest green, darker and duller than
-       WhatsApp's own #25D366 so it sits with the warm palette. */
-    --whatsapp-green: #3F6E4E;
-    --whatsapp-green-hover: #335A40;
+    /* Sage green: the header's WhatsApp glyph. Exact hexes from the 10h-3 spec. */
+    --sage-green: #7D8471;
+    --sage-green-hover: #6B7259;
     --destructive: hsl(0 72% 45%);
     --border: hsl(36 25% 85%);
     --input: hsl(36 25% 85%);

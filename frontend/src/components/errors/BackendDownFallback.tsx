@@ -66,7 +66,7 @@ export function BackendDownFallback({ context, compact = false }: { context: Bac
     <div className={GROUP}>
       {whatsapp && (
         <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={cn(SEGMENT, 'group/wa')}>
-          <WhatsAppGlyph className="size-5 text-whatsapp-green transition-colors group-hover/wa:text-whatsapp-green-hover" />
+          <WhatsAppGlyph className="size-5 text-sage-green transition-colors group-hover/wa:text-sage-green-hover" />
           Chat on WhatsApp
         </a>
       )}
