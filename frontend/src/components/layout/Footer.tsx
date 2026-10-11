@@ -26,10 +26,10 @@ export function Footer() {
           {stats.length > 0 && <p className="text-sm text-muted-foreground">{stats.join(' · ')}</p>}
         </div>
 
-        <nav className="flex flex-col gap-3" aria-label="Footer">
+        <nav className="flex flex-col md:gap-3" aria-label="Footer">
           <p className="text-sm font-semibold tracking-wider text-foreground uppercase">Explore</p>
           {NAV_ITEMS.map((item) => (
-            <Link key={item.label} to={item.to} className="text-muted-foreground transition-colors hover:text-primary">
+            <Link key={item.label} to={item.to} className="py-2.5 text-muted-foreground transition-colors hover:text-primary md:py-0">
               {item.label}
             </Link>
           ))}
@@ -39,7 +39,7 @@ export function Footer() {
           <p className="text-sm font-semibold tracking-wider text-foreground uppercase">Contact</p>
           {whatsapp && (
             <Button
-              className="h-10 self-start bg-[#25D366] px-4 text-white hover:bg-[#1ebe5b]"
+              className="h-11 self-start bg-[#25D366] px-4 text-white hover:bg-[#1ebe5b]"
               nativeButton={false}
               render={<a href={whatsapp} target="_blank" rel="noopener noreferrer" />}
             >
@@ -47,12 +47,12 @@ export function Footer() {
             </Button>
           )}
           {profile?.phone && (
-            <a href={`tel:${profile.phone}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary">
+            <a href={`tel:${profile.phone}`} className="flex min-h-11 items-center gap-2 text-muted-foreground hover:text-primary md:min-h-0">
               <Phone className="size-4" /> {formatPhone(profile.phone)}
             </a>
           )}
           {profile?.email && (
-            <a href={`mailto:${profile.email}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary">
+            <a href={`mailto:${profile.email}`} className="flex min-h-11 items-center gap-2 text-muted-foreground hover:text-primary md:min-h-0">
               <Mail className="size-4" /> {profile.email}
             </a>
           )}

@@ -71,12 +71,13 @@ export function InquiryForm({ listingSlug }: { listingSlug?: string }) {
       <FieldGroup>
         <Field data-invalid={!!errors.name}>
           <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
-          <Input id={`${id}-name`} autoComplete="name" aria-invalid={!!errors.name} {...register('name')} />
+          <Input className="h-11 md:h-8" id={`${id}-name`} autoComplete="name" aria-invalid={!!errors.name} {...register('name')} />
           <FieldError errors={[errors.name]} />
         </Field>
         <Field data-invalid={!!errors.phone}>
           <FieldLabel htmlFor={`${id}-phone`}>Phone</FieldLabel>
           <Input
+            className="h-11 md:h-8"
             id={`${id}-phone`}
             type="tel"
             autoComplete="tel"
@@ -88,6 +89,7 @@ export function InquiryForm({ listingSlug }: { listingSlug?: string }) {
         <Field data-invalid={!!errors.email}>
           <FieldLabel htmlFor={`${id}-email`}>Email</FieldLabel>
           <Input
+            className="h-11 md:h-8"
             id={`${id}-email`}
             type="email"
             autoComplete="email"
@@ -106,7 +108,7 @@ export function InquiryForm({ listingSlug }: { listingSlug?: string }) {
             <AlertDescription>{errors.root.server.message}</AlertDescription>
           </Alert>
         )}
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" className="h-11 md:h-8" disabled={isSubmitting}>
           {isSubmitting ? 'Sending…' : 'Send inquiry'}
         </Button>
       </FieldGroup>

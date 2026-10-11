@@ -102,7 +102,7 @@ export function Carousel({ items, label, className, desktopSlides = 3, mobileSli
                 aria-label={`Go to slide ${i + 1}`}
                 aria-current={i === selected}
                 onClick={() => api?.scrollTo(i)}
-                className="group flex size-6 items-center justify-center rounded-full focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                className="group flex size-11 items-center justify-center rounded-full md:size-6 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
               >
                 <span
                   className={cn(
@@ -114,10 +114,10 @@ export function Carousel({ items, label, className, desktopSlides = 3, mobileSli
             ))}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="icon-lg" aria-label="Previous slide" disabled={!canPrev} onClick={() => api?.scrollPrev()}>
+            <Button variant="outline" size="icon-lg" className="size-11 md:size-9" aria-label="Previous slide" disabled={!canPrev} onClick={() => api?.scrollPrev()}>
               <ChevronLeft />
             </Button>
-            <Button variant="outline" size="icon-lg" aria-label="Next slide" disabled={!canNext} onClick={() => api?.scrollNext()}>
+            <Button variant="outline" size="icon-lg" className="size-11 md:size-9" aria-label="Next slide" disabled={!canNext} onClick={() => api?.scrollNext()}>
               <ChevronRight />
             </Button>
           </div>

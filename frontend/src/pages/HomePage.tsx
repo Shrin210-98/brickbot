@@ -219,7 +219,7 @@ function FeaturedListings() {
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl/[1.2]">Featured Listings</h2>
-          <Button variant="link" nativeButton={false} render={<Link to="/listings" />}>
+          <Button variant="link" className="h-11 md:h-8" nativeButton={false} render={<Link to="/listings" />}>
             See all listings
           </Button>
         </div>
