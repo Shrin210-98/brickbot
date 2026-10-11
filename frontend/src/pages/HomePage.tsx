@@ -300,8 +300,8 @@ export function HomePage() {
           <TestimonialsCarousel />
         </div>
       </Section>
-      {/* 10h-4: heading beside the form; a shorter run into the footer */}
-      <Section id="contact" className="pt-12 pb-16 md:pt-16 md:pb-20">
+      {/* Heading beside the form; compact on md+ so it and the footer share one screen */}
+      <Section id="contact" className="pt-12 pb-12 md:pt-12 md:pb-10">
         <HomeEnquiryForm />
       </Section>
     </>

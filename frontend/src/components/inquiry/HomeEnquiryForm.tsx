@@ -10,7 +10,7 @@ import { useInquiryForm } from './useInquiryForm'
 
 // Square fields for this form only; the rest of the site keeps its rounding.
 const FIELD =
-  'w-full min-h-11 rounded-none border border-input bg-transparent px-3 py-2 text-base outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm'
+  'w-full min-h-11 md:min-h-0 rounded-none border border-input bg-transparent px-3 py-2 text-base outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm'
 
 function FormField({
   id,
@@ -26,7 +26,7 @@ function FormField({
   children: ReactNode
 }) {
   return (
-    <div className={cn('flex flex-col gap-2', className)}>
+    <div className={cn('flex flex-col gap-2 md:gap-1', className)}>
       <label htmlFor={id} className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
         {label}
       </label>
@@ -69,7 +69,7 @@ export function HomeEnquiryForm() {
           <span className="h-10 w-1 shrink-0 bg-primary" aria-hidden />
           <h2 className="font-display text-3xl/[1.2] md:text-[2.5rem]/[1.2]">Reach out</h2>
         </div>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground md:leading-snug">
           Have a question or want to see a listing?
           <br />I reply personally.
         </p>
@@ -87,7 +87,7 @@ export function HomeEnquiryForm() {
           </AlertDescription>
         </Alert>
       ) : (
-        <form onSubmit={submit} noValidate className="flex flex-col gap-6">
+        <form onSubmit={submit} noValidate className="flex flex-col gap-6 md:gap-3">
           <div className="grid gap-6 md:grid-cols-2">
             <FormField id={`${id}-name`} label="Name" error={errors.name?.message}>
               <input id={`${id}-name`} autoComplete="name" className={FIELD} {...invalid('name')} {...register('name')} />
@@ -116,7 +116,7 @@ export function HomeEnquiryForm() {
           <FormField id={`${id}-message`} label="Message" error={errors.message?.message}>
             <textarea
               id={`${id}-message`}
-              rows={4}
+              rows={3}
               className={cn(FIELD, 'resize-y')}
               {...invalid('message')}
               {...register('message')}
