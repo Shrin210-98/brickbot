@@ -41,7 +41,7 @@ export function ContactButtons() {
     <div className={cn(GROUP, 'h-11')}>
       {whatsapp && (
         <a href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp" className={cn(SEGMENT, 'group/wa')}>
-          <WhatsAppGlyph className="size-5 text-sage-green transition-colors group-hover/wa:text-sage-green-hover" />
+          <WhatsAppGlyph className="size-5 text-[#25D366] transition-colors group-hover/wa:text-[#1ebe5b]" />
         </a>
       )}
       {whatsapp && phone && <span className={DIVIDER} aria-hidden />}
@@ -68,7 +68,7 @@ export function ContactRows() {
     <div className="flex flex-col">
       {whatsapp && (
         <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={cn(ROW, 'group/wa', phone && 'border-b border-border')}>
-          <WhatsAppGlyph className="size-5 text-sage-green transition-colors group-hover/wa:text-sage-green-hover" /> Chat on WhatsApp
+          <WhatsAppGlyph className="size-5 text-[#25D366] transition-colors group-hover/wa:text-[#1ebe5b]" /> Chat on WhatsApp
         </a>
       )}
       {phone && (
