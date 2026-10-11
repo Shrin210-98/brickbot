@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react'
-import { Menu, MessageCircle, Phone } from 'lucide-react'
+import { Menu, Phone } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useProfile } from '@/api/profile'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { WhatsAppGlyph } from '@/components/whatsapp/WhatsAppGlyph'
 import { formatPhone } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { whatsappLink } from '@/lib/whatsapp'
-import { InstallAppIcon, InstallAppMenuItem } from './InstallApp'
+import { InstallAppMenuItem } from './InstallApp'
 import { NAV_ITEMS, siteName } from './nav'
 
 const SCROLL_THRESHOLD = 16
+
+// WhatsApp and Call: matching outlined boxes, monochrome icons.
+const CONTACT_BOX =
+  'inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-border p-2 text-foreground transition-colors outline-none hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/50'
+// The same treatment as full-width rows in the mobile menu.
+const CONTACT_ROW =
+  'flex h-11 w-full items-center gap-3 rounded-lg border border-border px-3 text-base font-medium text-foreground transition-colors outline-none hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/50'
 
 function useScrolled(): boolean {
   const [scrolled, setScrolled] = useState(() => window.scrollY > SCROLL_THRESHOLD)
@@ -62,24 +70,25 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <InstallAppIcon />
-          {whatsapp && (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Chat on WhatsApp"
-              className="size-11 text-[#25D366] hover:text-[#1ebe5b]"
-              nativeButton={false}
-              render={<a href={whatsapp} target="_blank" rel="noopener noreferrer" />}
-            >
-              <MessageCircle />
-            </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Until the first profile arrives, empty boxes hold the space so nothing shifts. */}
+          {profile === undefined ? (
+            <span className={cn(CONTACT_BOX, 'invisible')} aria-hidden />
+          ) : (
+            whatsapp && (
+              <a href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp" className={CONTACT_BOX}>
+                <WhatsAppGlyph className="size-5" />
+              </a>
+            )
           )}
-          {phone && (
-            <Button variant="outline" className="hidden h-11 sm:inline-flex" nativeButton={false} render={<a href={`tel:${phone}`} />}>
-              <Phone data-icon="inline-start" /> Call
-            </Button>
+          {profile === undefined ? (
+            <span className={cn(CONTACT_BOX, 'invisible hidden sm:inline-flex')} aria-hidden />
+          ) : (
+            phone && (
+              <a href={`tel:${phone}`} aria-label={`Call ${formatPhone(phone)}`} className={cn(CONTACT_BOX, 'hidden sm:inline-flex')}>
+                <Phone className="size-5" />
+              </a>
+            )
           )}
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger render={<Button variant="ghost" size="icon" className="size-11 md:hidden" aria-label="Open menu" />}>
@@ -104,11 +113,18 @@ export function Header() {
                   </Link>
                 ))}
               </nav>
-              {phone && (
-                <div className="px-5">
-                  <Button variant="outline" className="h-11 w-full" nativeButton={false} render={<a href={`tel:${phone}`} />}>
-                    <Phone data-icon="inline-start" /> Call {formatPhone(phone)}
-                  </Button>
+              {(whatsapp || phone) && (
+                <div className="flex flex-col gap-2 px-5">
+                  {whatsapp && (
+                    <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={CONTACT_ROW}>
+                      <WhatsAppGlyph className="size-5" /> WhatsApp
+                    </a>
+                  )}
+                  {phone && (
+                    <a href={`tel:${phone}`} className={CONTACT_ROW}>
+                      <Phone className="size-5" /> Call {formatPhone(phone)}
+                    </a>
+                  )}
                 </div>
               )}
               <InstallAppMenuItem />

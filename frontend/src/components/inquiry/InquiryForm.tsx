@@ -1,67 +1,32 @@
 import { useId } from 'react'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { CheckCircle2 } from 'lucide-react'
-import { useForm } from 'react-hook-form'
-import { useCreateInquiry } from '@/api/inquiries'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { ApiError, isNetworkError } from '@/lib/api'
-import { applyFieldErrors } from '@/lib/form-errors'
-import {
-  EMPTY_INQUIRY,
-  INQUIRY_FIELDS,
-  inquirySchema,
-  type InquiryInput,
-  type InquiryValues,
-} from './inquiry-schema'
-
-function serverErrorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    if (err.status === 404) return 'This listing is no longer available.'
-    if (err.status === 429) return 'Too many inquiries sent. Please try again in a minute.'
-  }
-  if (isNetworkError(err) || (err instanceof ApiError && err.status >= 500)) {
-    return "Can't reach the server. Your details are still here, so please try again."
-  }
-  return "Your inquiry couldn't be sent. Please try again."
-}
+import { useInquiryForm } from './useInquiryForm'
 
 export function InquiryForm({ listingSlug }: { listingSlug?: string }) {
   const id = useId()
-  const createInquiry = useCreateInquiry()
   const {
-    register,
-    handleSubmit,
-    setError,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<InquiryInput, unknown, InquiryValues>({
-    resolver: zodResolver(inquirySchema),
-    defaultValues: EMPTY_INQUIRY,
-  })
+    form: {
+      register,
+      formState: { errors, isSubmitting },
+    },
+    submit,
+    sent,
+    sendAnother,
+  } = useInquiryForm(listingSlug)
 
-  const onSubmit = async (values: InquiryValues) => {
-    try {
-      await createInquiry.mutateAsync({ ...values, listing_slug: listingSlug })
-      reset()
-    } catch (err) {
-      if (!applyFieldErrors(err, setError, INQUIRY_FIELDS)) {
-        setError('root.server', { message: serverErrorMessage(err) })
-      }
-    }
-  }
-
-  if (createInquiry.isSuccess) {
+  if (sent) {
     return (
       <Alert>
         <CheckCircle2 />
         <AlertTitle>Inquiry sent</AlertTitle>
         <AlertDescription>
           Thanks for reaching out. You'll hear back soon.
-          <Button variant="link" className="h-auto p-0" onClick={() => createInquiry.reset()}>
+          <Button variant="link" className="h-auto p-0" onClick={sendAnother}>
             Send another
           </Button>
         </AlertDescription>
@@ -70,7 +35,7 @@ export function InquiryForm({ listingSlug }: { listingSlug?: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form onSubmit={submit} noValidate>
       <FieldGroup>
         <Field data-invalid={!!errors.name}>
           <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>

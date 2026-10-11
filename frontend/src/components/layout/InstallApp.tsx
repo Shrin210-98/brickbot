@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Download, Share } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
 
 const IOS_HINT = "Add to Home Screen: tap Share, then 'Add to Home Screen'."
@@ -19,36 +18,9 @@ function IosHint({ onDismiss }: { onDismiss: () => void }) {
   )
 }
 
-// Header icon from md up. Hidden when installed, unsupported, or dismissed in
-// the last 30 days; it never opens anything by itself.
-export function InstallAppIcon() {
-  const { mode, install, dismiss } = useInstallPrompt()
-  if (mode === null) return null
-
-  const label = 'Install app'
-  if (mode === 'prompt') {
-    return (
-      <Button variant="ghost" size="icon" className="hidden size-11 md:inline-flex" aria-label={label} title={label} onClick={install}>
-        <Download />
-      </Button>
-    )
-  }
-  // iPad Safari: no prompt API, so explain the Share sheet instead.
-  return (
-    <Popover>
-      <PopoverTrigger
-        render={<Button variant="ghost" size="icon" className="hidden size-11 md:inline-flex" aria-label={label} title={label} />}
-      >
-        <Download />
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-72">
-        <IosHint onDismiss={dismiss} />
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-// Text button at the bottom of the mobile Sheet menu.
+// "Install app" at the bottom of the mobile Sheet menu. It's the only one:
+// desktop browsers already offer install from the address bar. Hidden when
+// installed, unsupported, or dismissed in the last 30 days.
 export function InstallAppMenuItem() {
   const { mode, install, dismiss } = useInstallPrompt()
   const [hint, setHint] = useState(false)

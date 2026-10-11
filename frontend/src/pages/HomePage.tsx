@@ -7,7 +7,7 @@ import { images } from '@/assets/images'
 import { ListingsCarousel } from '@/components/blocks/ListingsCarousel'
 import { TestimonialsCarousel } from '@/components/blocks/TestimonialsCarousel'
 import { ApiErrorState } from '@/components/errors/ApiErrorState'
-import { InquiryForm } from '@/components/inquiry/InquiryForm'
+import { HomeEnquiryForm } from '@/components/inquiry/HomeEnquiryForm'
 import { siteName } from '@/components/layout/nav'
 import { EmptyState } from '@/components/listings/EmptyState'
 import { ListingGrid } from '@/components/listings/ListingGrid'
@@ -291,16 +291,9 @@ export function HomePage() {
           <TestimonialsCarousel />
         </div>
       </Section>
-      {/* 8c: redesigned contact section */}
+      {/* 10h-2: editorial enquiry form, square fields, no card */}
       <Section id="contact">
-        <div className="mx-auto flex max-w-xl flex-col gap-6">
-          <h2 className="text-3xl/[1.2]">Get in Touch</h2>
-          <Card>
-            <CardContent>
-              <InquiryForm />
-            </CardContent>
-          </Card>
-        </div>
+        <HomeEnquiryForm />
       </Section>
     </>
   )
