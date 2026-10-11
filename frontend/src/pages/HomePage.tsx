@@ -133,8 +133,8 @@ function Credential({ value, label, rera = false }: { value: string; label: stri
   if (rera) {
     return (
       <div className="flex min-w-0 flex-col justify-center rounded-lg bg-primary px-4 py-3 text-primary-foreground">
-        <p className="text-sm font-medium tracking-wide break-words text-white">{value}</p>
-        <p className="mt-0.5 text-xs text-white/70">{label}</p>
+        <p className="font-display text-xl font-semibold text-white">{value}</p>
+        <p className="mt-0.5 text-md text-white/90">{label}</p>
       </div>
     )
   }
