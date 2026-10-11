@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, apiFetch, apiPost, apiSend } from '@/lib/api'
+import { ApiError, apiFetch, apiPost, apiSend, isOffline } from '@/lib/api'
 
 function mockFetch(res: Response) {
   const fn = vi.fn<typeof fetch>(async () => res)
@@ -77,5 +77,14 @@ describe('apiSend', () => {
     const fn = mockFetch(new Response(null, { status: 204 }))
     await apiSend<void>('DELETE', '/api/admin/listings/1')
     expect(fn.mock.calls[0][1]).toMatchObject({ method: 'DELETE', body: undefined, headers: { Accept: 'application/json' } })
+  })
+})
+
+describe('isOffline', () => {
+  it('is true for a fetch that got no response', () => {
+    expect(isOffline(new TypeError('Failed to fetch'))).toBe(true)
+  })
+  it('is false for an HTTP error while online', () => {
+    expect(isOffline(new ApiError(500, 'internal', 'boom'))).toBe(false)
   })
 })
