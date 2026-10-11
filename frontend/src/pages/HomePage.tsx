@@ -128,7 +128,16 @@ function Hero({ profile }: { profile: Profile | null }) {
   )
 }
 
-function Credential({ value, label }: { value: string; label: string }) {
+function Credential({ value, label, rera = false }: { value: string; label: string; rera?: boolean }) {
+  // The RERA number: a terracotta card with just the number and its label.
+  if (rera) {
+    return (
+      <div className="flex min-w-0 flex-col justify-center rounded-lg bg-primary px-4 py-3 text-primary-foreground">
+        <p className="text-sm font-medium tracking-wide break-words text-white">{value}</p>
+        <p className="mt-0.5 text-xs text-white/70">{label}</p>
+      </div>
+    )
+  }
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card p-5">
       <p className="font-display text-2xl font-semibold break-words text-primary md:text-3xl">{value}</p>
@@ -142,8 +151,8 @@ function About({ profile }: { profile: Profile }) {
   const credentials = [
     profile.years_experience != null && { value: `${profile.years_experience} years`, label: 'in Mumbai real estate' },
     profile.deals_closed != null && { value: `${profile.deals_closed}+ deals`, label: 'closed for families' },
-    profile.license_no && { value: profile.license_no, label: 'MahaRERA registered' },
-  ].filter((c): c is { value: string; label: string } => !!c)
+    profile.license_no && { value: profile.license_no, label: 'MahaRERA registered', rera: true },
+  ].filter((c): c is { value: string; label: string; rera?: boolean } => !!c)
 
   return (
     <Section id="about" className="bg-secondary">
@@ -292,7 +301,7 @@ export function HomePage() {
         </div>
       </Section>
       {/* 10h-4: heading beside the form; a shorter run into the footer */}
-      <Section id="contact" className="pb-16 md:pb-20">
+      <Section id="contact" className="pt-12 pb-16 md:pt-16 md:pb-20">
         <HomeEnquiryForm />
       </Section>
     </>

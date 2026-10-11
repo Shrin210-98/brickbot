@@ -19,15 +19,15 @@ export function Footer() {
 
   return (
     <footer className="border-t bg-secondary">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-3 md:py-10">
-        <div className="flex flex-col gap-3">
-          <p className="font-display text-2xl font-semibold">{brand}</p>
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-3 md:gap-8 md:py-8 lg:gap-12">
+        <div className="flex flex-col gap-3 md:gap-2">
+          <p className="font-display text-2xl font-semibold md:text-xl">{brand}</p>
           {profile?.tagline && <p className="text-muted-foreground">{profile.tagline}</p>}
           {stats.length > 0 && <p className="text-sm text-muted-foreground">{stats.join(' · ')}</p>}
         </div>
 
-        <nav className="flex flex-col md:gap-3" aria-label="Footer">
-          <p className="text-sm font-semibold tracking-wider text-foreground uppercase">Explore</p>
+        <nav className="flex flex-col md:gap-1" aria-label="Footer">
+          <p className="text-sm font-semibold tracking-wider text-foreground uppercase md:mb-1">Explore</p>
           {NAV_ITEMS.map((item) => (
             <Link key={item.label} to={item.to} className="py-2.5 text-muted-foreground transition-colors hover:text-primary md:py-0">
               {item.label}
@@ -35,11 +35,11 @@ export function Footer() {
           ))}
         </nav>
 
-        <div className="flex flex-col gap-3">
-          <p className="text-sm font-semibold tracking-wider text-foreground uppercase">Contact</p>
+        <div className="flex flex-col gap-3 md:gap-1.5">
+          <p className="text-sm font-semibold tracking-wider text-foreground uppercase md:mb-0.5">Contact</p>
           {whatsapp && (
             <Button
-              className="h-11 self-start bg-[#25D366] px-4 text-white hover:bg-[#1ebe5b]"
+              className="h-11 self-start bg-[#25D366] px-4 text-white hover:bg-[#1ebe5b] md:h-9 md:px-3 md:py-2"
               nativeButton={false}
               render={<a href={whatsapp} target="_blank" rel="noopener noreferrer" />}
             >
@@ -60,7 +60,7 @@ export function Footer() {
       </div>
 
       <div className="border-t">
-        <div className="mx-auto max-w-6xl px-4 py-5 text-sm text-muted-foreground">
+        <div className="mx-auto max-w-6xl px-4 py-5 text-sm text-muted-foreground md:py-4 md:text-xs">
           © {new Date().getFullYear()} {brand}
           {profile?.license_no && <> · RERA {profile.license_no}</>}
         </div>
