@@ -2,8 +2,10 @@ import { Building2, LogOut } from 'lucide-react'
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useLogout, useMe } from '@/api/auth'
 import { ApiErrorState } from '@/components/errors/ApiErrorState'
+import { BackendDownFallback } from '@/components/errors/BackendDownFallback'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { isBackendDown } from '@/lib/backend-status'
 import { cn } from '@/lib/utils'
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -20,6 +22,14 @@ export function AdminLayout() {
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-40 w-full" />
+      </div>
+    )
+  }
+
+  if (error && isBackendDown(error)) {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16">
+        <BackendDownFallback context="admin" />
       </div>
     )
   }

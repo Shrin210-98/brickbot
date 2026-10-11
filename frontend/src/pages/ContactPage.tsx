@@ -1,9 +1,13 @@
 import { useProfile } from '@/api/profile'
+import { BackendDownFallback } from '@/components/errors/BackendDownFallback'
 import { InquiryForm } from '@/components/inquiry/InquiryForm'
 import { Card, CardContent } from '@/components/ui/card'
+import { useBackendStatus } from '@/lib/backend-status'
 
 export function ContactPage() {
   const { data: profile } = useProfile()
+  const { isDown } = useBackendStatus()
+  const fallback = <BackendDownFallback context="contact" />
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
@@ -14,11 +18,16 @@ export function ContactPage() {
           Looking to buy, sell or rent? Leave your details and {profile?.full_name || 'we'} will get back to you.
         </p>
       </div>
-      <Card>
-        <CardContent>
-          <InquiryForm />
-        </CardContent>
-      </Card>
+      {/* Down already (the profile request failed), or found out on submit. */}
+      {isDown ? (
+        fallback
+      ) : (
+        <Card>
+          <CardContent>
+            <InquiryForm downFallback={fallback} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

@@ -164,6 +164,7 @@ describe('createChat', () => {
     expect(chat.getState()).toEqual({
       status: 'error',
       error: 'The assistant is unavailable right now.',
+      unreachable: false,
       restoring: false,
       messages: [
         { id: 1, role: 'user', text: 'hi' },
@@ -195,9 +196,24 @@ describe('createChat', () => {
     expect(chat.getState()).toEqual({
       status: 'error',
       error: "Couldn't reach the server. Check your connection and try again.",
+      unreachable: true,
       restoring: false,
       messages: [{ id: 1, role: 'user', text: 'hi' }],
     })
+  })
+
+  it('a 5xx (tunnel down) is unreachable; a 4xx is not, and a new send clears it', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response('<html>Bad gateway</html>', { status: 502 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const chat = createChat({ visitorId: VISITOR, createSession: createChatSession })
+    await chat.send('hi')
+    expect(chat.getState()).toMatchObject({ status: 'error', unreachable: true })
+
+    fetchMock.mockImplementation(async () =>
+      Response.json({ error: { code: 'rate_limited', message: 'Slow down' } }, { status: 429 }),
+    )
+    await chat.retry()
+    expect(chat.getState()).toMatchObject({ status: 'error', error: 'Slow down', unreachable: false })
   })
 
   it('reset() aborts the stream in flight and ignores late events', async () => {
@@ -210,7 +226,7 @@ describe('createChat', () => {
     chat.reset()
     expect(signals[0]?.aborted).toBe(true)
     await expect(sent).resolves.toBeUndefined()
-    expect(chat.getState()).toEqual({ messages: [], status: 'idle', error: null, restoring: false })
+    expect(chat.getState()).toEqual({ messages: [], status: 'idle', error: null, unreachable: false, restoring: false })
   })
 
   it('abort() cancels only the reply in flight and keeps the conversation', async () => {
@@ -333,7 +349,7 @@ describe('clearing the conversation', () => {
     chat.reset()
     expect(signals[0]?.aborted).toBe(true)
     expect(store.has('brickbot.chat_session')).toBe(false)
-    expect(chat.getState()).toEqual({ messages: [], status: 'idle', error: null, restoring: false })
+    expect(chat.getState()).toEqual({ messages: [], status: 'idle', error: null, unreachable: false, restoring: false })
     await sent
     // Nothing from the aborted stream lands afterwards.
     expect(chat.getState().messages).toEqual([])

@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { BackendDownFallback } from '@/components/errors/BackendDownFallback'
 import { Button } from '@/components/ui/button'
 import type { UseChat } from '@/hooks/useChat'
 import { whatsappLink } from '@/lib/whatsapp'
@@ -143,9 +144,15 @@ export function ChatPanel({
 
           {chat.status === 'error' && chat.error && (
             <div className="flex items-center justify-between gap-3 border-t px-4 py-2">
-              <p role="alert" className="text-sm text-destructive">
-                {chat.error}
-              </p>
+              {chat.unreachable ? (
+                <div className="flex-1">
+                  <BackendDownFallback context="chat" compact />
+                </div>
+              ) : (
+                <p role="alert" className="text-sm text-destructive">
+                  {chat.error}
+                </p>
+              )}
               {canRetry && (
                 <Button variant="outline" size="sm" onClick={() => sendAndFocus(chat.retry)}>
                   <RotateCcw data-icon="inline-start" /> Retry

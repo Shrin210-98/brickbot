@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useListing } from '@/api/listings'
 import { useMarket, useProfile } from '@/api/profile'
 import { ApiErrorState } from '@/components/errors/ApiErrorState'
+import { BackendDownFallback } from '@/components/errors/BackendDownFallback'
 import { InquiryForm } from '@/components/inquiry/InquiryForm'
 import { EmptyState } from '@/components/listings/EmptyState'
 import { ListingGallery } from '@/components/listings/ListingGallery'
@@ -13,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { isBrowserOffline, isNotFound } from '@/lib/api'
+import { isBackendDown } from '@/lib/backend-status'
 import { formatArea, formatPrice, PROPERTY_TYPE_LABELS, PURPOSE_LABELS } from '@/lib/format'
 import { whatsappLink } from '@/lib/whatsapp'
 import type { ListingDetail } from '@/types/api'
@@ -144,6 +146,8 @@ export function ListingDetailPage() {
               </Button>
             }
           />
+        ) : isBackendDown(error) ? (
+          <BackendDownFallback context="detail" />
         ) : (
           <ApiErrorState error={error} title="Couldn't load this listing" onRetry={() => void refetch()} />
         )}

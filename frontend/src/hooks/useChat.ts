@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { streamChatMessage, useChatTranscript, useCreateChatSession } from '@/api/chat'
 import { ApiError, isNetworkError, isNotFound } from '@/lib/api'
+import { isBackendDown } from '@/lib/backend-status'
 import type { ChatLine, ChatSession, ChatToolName, ListingSummary } from '@/types/api'
 
 export interface ChatMessage {
@@ -20,6 +21,7 @@ export interface ChatState {
   messages: ChatMessage[]
   status: ChatStatus
   error: string | null
+  unreachable: boolean // the error is the backend being down (isBackendDown)
   restoring: boolean // a saved session's transcript is still loading
 }
 
@@ -111,7 +113,7 @@ export interface Chat {
   dropRestore: (sessionGone: boolean) => void
 }
 
-const INITIAL: ChatState = { messages: [], status: 'idle', error: null, restoring: false }
+const INITIAL: ChatState = { messages: [], status: 'idle', error: null, unreachable: false, restoring: false }
 
 export function hasMessages(state: ChatState): boolean {
   return state.messages.length > 0
@@ -160,6 +162,7 @@ export function createChat({
     set({
       status: 'streaming',
       error: null,
+      unreachable: false,
       messages: [
         ...state.messages,
         { id: nextId, role: 'user', text: content },
@@ -167,7 +170,8 @@ export function createChat({
       ],
     })
     nextId += 2
-    const fail = (message: string) => set({ status: 'error', error: message, messages: settle(replyId) })
+    const fail = (message: string, unreachable = false) =>
+      set({ status: 'error', error: message, unreachable, messages: settle(replyId) })
 
     let ended = false
     try {
@@ -215,7 +219,7 @@ export function createChat({
         sessionId = null
         onSession(null)
       }
-      fail(errorMessage(err))
+      fail(errorMessage(err), isBackendDown(err))
     } finally {
       if (inflight === ctrl) inflight = null
     }

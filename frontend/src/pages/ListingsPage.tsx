@@ -3,6 +3,7 @@ import { SlidersHorizontal } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { LISTINGS_PAGE_SIZE, useListings } from '@/api/listings'
 import { ApiErrorState } from '@/components/errors/ApiErrorState'
+import { BackendDownFallback } from '@/components/errors/BackendDownFallback'
 import { EmptyState } from '@/components/listings/EmptyState'
 import { ListingFilters } from '@/components/listings/ListingFilters'
 import { ListingGrid } from '@/components/listings/ListingGrid'
@@ -14,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { isBrowserOffline } from '@/lib/api'
+import { isBackendDown } from '@/lib/backend-status'
 import { hasActiveFilters, parseListingQuery, toSearchParams } from '@/lib/listing-filters'
 import type { ListingQuery, ListingSort } from '@/types/api'
 
@@ -81,7 +83,8 @@ export function ListingsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          {listings.isPending ? 'Loading…' : `${total} ${total === 1 ? 'property' : 'properties'}`}
+          {/* No count on error: "0 properties" would read as none listed. */}
+          {listings.isPending ? 'Loading…' : listings.isError ? '' : `${total} ${total === 1 ? 'property' : 'properties'}`}
         </p>
         <Select
           items={SORT_ITEMS}
@@ -103,6 +106,8 @@ export function ListingsPage() {
 
       {listings.isError && isBrowserOffline() ? (
         <OfflineNotice />
+      ) : listings.isError && isBackendDown(listings.error) ? (
+        <BackendDownFallback context="listings" />
       ) : listings.isError ? (
         <ApiErrorState error={listings.error} title="Couldn't load listings" onRetry={() => void listings.refetch()} />
       ) : (

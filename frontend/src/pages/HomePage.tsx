@@ -7,6 +7,7 @@ import { images } from '@/assets/images'
 import { ListingsCarousel } from '@/components/blocks/ListingsCarousel'
 import { TestimonialsCarousel } from '@/components/blocks/TestimonialsCarousel'
 import { ApiErrorState } from '@/components/errors/ApiErrorState'
+import { BackendDownFallback } from '@/components/errors/BackendDownFallback'
 import { HomeEnquiryForm } from '@/components/inquiry/HomeEnquiryForm'
 import { siteName } from '@/components/layout/nav'
 import { EmptyState } from '@/components/listings/EmptyState'
@@ -15,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { isBackendDown } from '@/lib/backend-status'
 import { cn } from '@/lib/utils'
 import { whatsappLink } from '@/lib/whatsapp'
 import type { Profile } from '@/types/api'
@@ -232,7 +234,9 @@ function FeaturedListings() {
             See all listings
           </Button>
         </div>
-        {featured.isError ? (
+        {featured.isError && isBackendDown(featured.error) ? (
+          <BackendDownFallback context="featured" />
+        ) : featured.isError ? (
           <ApiErrorState
             error={featured.error}
             title="Couldn't load featured listings"

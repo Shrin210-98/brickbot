@@ -91,7 +91,13 @@ export function useProfile() {
     },
     staleTime: (q) => (q.state.data?.source === 'live' ? LIVE_STALE_MS : 0),
   })
-  return { data: query.data?.profile, source: query.data?.source, isPending: query.isPending }
+  return {
+    data: query.data?.profile,
+    source: query.data?.source,
+    isPending: query.isPending,
+    // The cached copy shown while the first request is still in flight.
+    isPlaceholderData: query.isPlaceholderData,
+  }
 }
 
 export function useMarket(): Market {

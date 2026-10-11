@@ -5,12 +5,14 @@ import { useForm } from 'react-hook-form'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { useLogin } from '@/api/auth'
+import { BackendDownFallback } from '@/components/errors/BackendDownFallback'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { ApiError, isNetworkError } from '@/lib/api'
+import { ApiError } from '@/lib/api'
+import { isBackendDown } from '@/lib/backend-status'
 import { applyFieldErrors } from '@/lib/form-errors'
 
 // Mirrors the POST /api/auth/login validator tags. The password is never trimmed.
@@ -22,15 +24,13 @@ const loginSchema = z.object({
 type LoginInput = z.input<typeof loginSchema>
 type LoginValues = z.output<typeof loginSchema>
 
-// "Wrong password" and "server unreachable" must never look alike. 429 matches
-// the login rate limit (5 per 15 minutes, docs/api.md).
+// "Wrong password" and "server unreachable" must never look alike, so the
+// unreachable case gets BackendDownFallback instead. 429 matches the login
+// rate limit (5 per 15 minutes, docs/api.md).
 function serverErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status === 401) return 'Wrong email or password.'
     if (err.status === 429) return 'Too many attempts. Try again in 15 minutes.'
-  }
-  if (isNetworkError(err) || (err instanceof ApiError && err.status >= 500)) {
-    return "Can't reach the server. Please try again."
   }
   return "Couldn't log in. Please try again."
 }
@@ -57,6 +57,8 @@ export function LoginPage() {
       await login.mutateAsync(values)
       navigate(from, { replace: true })
     } catch (err) {
+      // Rendered from login.error below the form.
+      if (isBackendDown(err)) return
       if (!applyFieldErrors(err, setError, ['email', 'password'])) {
         setError('root.server', { message: serverErrorMessage(err) })
       }
@@ -108,6 +110,11 @@ export function LoginPage() {
               </Button>
             </FieldGroup>
           </form>
+          {isBackendDown(login.error) && (
+            <div className="mt-4">
+              <BackendDownFallback context="admin" compact />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
