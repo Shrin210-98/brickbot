@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://outer-fun-threatened-retained.trycloudflare.com/api/:path*"
+      "destination": "https://legends-jerry-qualification-locally.trycloudflare.com/api/:path*"
     },
     {
       "source": "/media/:path*",
-      "destination": "https://outer-fun-threatened-retained.trycloudflare.com/media/:path*"
+      "destination": "https://legends-jerry-qualification-locally.trycloudflare.com/media/:path*"
     },
     {
       "source": "/(.*)",
