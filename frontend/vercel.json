@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://REPLACE-WITH-TUNNEL-URL/api/:path*"
+      "destination": "https://outer-fun-threatened-retained.trycloudflare.com/api/:path*"
     },
     {
       "source": "/media/:path*",
-      "destination": "https://REPLACE-WITH-TUNNEL-URL/media/:path*"
+      "destination": "https://outer-fun-threatened-retained.trycloudflare.com/media/:path*"
     },
     {
       "source": "/(.*)",
