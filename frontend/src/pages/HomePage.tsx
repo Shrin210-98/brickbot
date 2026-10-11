@@ -291,8 +291,8 @@ export function HomePage() {
           <TestimonialsCarousel />
         </div>
       </Section>
-      {/* 10h-2: editorial enquiry form, square fields, no card */}
-      <Section id="contact">
+      {/* 10h-4: heading beside the form; a shorter run into the footer */}
+      <Section id="contact" className="pb-16 md:pb-20">
         <HomeEnquiryForm />
       </Section>
     </>

@@ -62,13 +62,14 @@ export function HomeEnquiryForm() {
     errors[name] ? { 'aria-invalid': true, 'aria-describedby': `${id}-${name}-error` } : {}
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-8">
-      <div className="flex flex-col gap-3">
+    // md+: heading column (~40%) beside the form (~60%); stacked below md.
+    <div className="grid gap-8 md:grid-cols-[2fr_3fr] md:gap-12 lg:gap-20">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
           <span className="h-10 w-1 shrink-0 bg-primary" aria-hidden />
           <h2 className="font-display text-3xl/[1.2] md:text-[2.5rem]/[1.2]">Reach out</h2>
         </div>
-        <p className="pl-5 text-muted-foreground">
+        <p className="text-muted-foreground">
           Have a question or want to see a listing?
           <br />I reply personally.
         </p>
@@ -86,7 +87,7 @@ export function HomeEnquiryForm() {
           </AlertDescription>
         </Alert>
       ) : (
-        <form onSubmit={submit} noValidate className="flex flex-col gap-6 md:pl-5">
+        <form onSubmit={submit} noValidate className="flex flex-col gap-6">
           <div className="grid gap-6 md:grid-cols-2">
             <FormField id={`${id}-name`} label="Name" error={errors.name?.message}>
               <input id={`${id}-name`} autoComplete="name" className={FIELD} {...invalid('name')} {...register('name')} />

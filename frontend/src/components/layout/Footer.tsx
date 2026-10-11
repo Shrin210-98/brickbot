@@ -19,7 +19,7 @@ export function Footer() {
 
   return (
     <footer className="border-t bg-secondary">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-3">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-3 md:py-10">
         <div className="flex flex-col gap-3">
           <p className="font-display text-2xl font-semibold">{brand}</p>
           {profile?.tagline && <p className="text-muted-foreground">{profile.tagline}</p>}

@@ -45,6 +45,18 @@ export function formatPrice(price: number, purpose: Purpose, market: Market): st
   return purpose === 'rent' ? `${amount}/mo` : amount
 }
 
+// Short form for filter labels: ₹50L, ₹3Cr in India (en-IN compact
+// notation), $1.2M elsewhere.
+export function formatPriceCompact(price: number, market: Market): string {
+  return new Intl.NumberFormat(locale(market), {
+    style: 'currency',
+    currency: market.currency,
+    notation: 'compact',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  }).format(price)
+}
+
 export function formatArea(area: number, market: Market): string {
   return `${new Intl.NumberFormat(locale(market)).format(area)} ${AREA_UNIT_LABELS[market.area_unit]}`
 }

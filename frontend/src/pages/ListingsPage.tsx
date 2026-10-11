@@ -23,12 +23,14 @@ const SORT_ITEMS: { value: ListingSort; label: string }[] = [
   { value: 'price_desc', label: 'Price: high to low' },
 ]
 
-// Phones get the filter form in a bottom sheet, so the results start near the top.
+// Below lg the filters live in a bottom sheet, so the results start near the top.
 function FiltersSheet({ active, total, children }: { active: boolean; total: number | undefined; children: ReactNode }) {
   const [open, setOpen] = useState(false)
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger render={<Button variant="outline" className="h-11 self-start" />}>
+      <SheetTrigger
+        render={<Button variant="outline" className="h-11 w-full rounded-none border-input text-base" />}
+      >
         <SlidersHorizontal data-icon="inline-start" /> Filters
         {active && <Badge className="ml-1">On</Badge>}
       </SheetTrigger>
@@ -65,8 +67,10 @@ export function ListingsPage() {
   const total = listings.data?.total ?? 0
   const pageCount = Math.ceil(total / LISTINGS_PAGE_SIZE)
   const filtered = hasActiveFilters(query)
-  const wide = useMediaQuery('(min-width: 48rem)') // Tailwind md
-  const filters = <ListingFilters key={searchParams.toString()} query={query} onChange={setQuery} />
+  const wide = useMediaQuery('(min-width: 64rem)') // Tailwind lg
+  const filters = (
+    <ListingFilters query={query} onChange={setQuery} layout={wide ? 'bar' : 'stack'} />
+  )
 
   return (
     <div className="flex flex-col gap-6">
